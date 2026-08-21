@@ -1,166 +1,180 @@
 # Restaurant POS
 
-> An enterprise-grade restaurant point-of-sale desktop application built with Java Swing.
+> An enterprise-grade restaurant point-of-sale desktop application built with Java Swing and FlatLaf.
 
 ## Description
 
-**Restaurant POS** is a robust and modern point-of-sale system designed specifically for restaurant operations. 
+**Restaurant POS** is a modern, high-performance point-of-sale system designed specifically for food service operations, cafes, and restaurants. It features a responsive executive dashboard, digital menu management with 86'd stock controls, real-time sales reporting with CSV/Excel/PDF exports, and granular role-based user access controls.
 
-*A bit of history:* This project was originally built in 2023 as a Grade 11 computer programming project. Recently, it has been fully revived, refactored, and significantly enhanced to meet enterprise-grade software standards. This showcases the evolution of my programming skills from high school to today.
+### The Story Behind It
+
+*A bit of history:* This project was originally conceived and built in 2023 as a Grade 11 computer programming project. Recently, it has been fully revived, refactored, and significantly enhanced to meet industry-grade enterprise software standards. This showcases the evolution of my software engineering capabilities, architectural discipline, and attention to user experience design from high school to today.
+
+---
 
 ## Features
 
-- **Order Management:** Quickly take orders, manage carts, apply discounts, void items, and checkout securely.
-- **Billing & Receipts:** Automatically calculate totals, handle taxes (VAT), and generate structured digital receipts.
-- **Executive Dashboard:** View real-time KPI metrics, daily sales charts, and recent activity streams.
-- **Menu Management:** Easily add, edit, or categorize menu items with custom profile images and pricing.
-- **Role-Based Access Control:** Distinct roles for Administrators (full access, reports, user management) and Cashiers (order processing). Secure login with rate-limiting and audit logging.
-- **Reporting:** Export comprehensive sales and cashier reports directly to CSV or Excel formats.
-- **Customizable UI:** A sleek, responsive, and modern Swing interface using FlatLaf for a premium user experience (including dark/light mode support).
+- **Executive Dashboard:** View live sales volume, net revenue after taxes, active order counts, dynamic sales performance graphs, and recent activity streams without viewport clutter.
+- **POS Ordering Terminal:** Food item catalog with category tabs, live cart calculations, tax/discount adjustments, and digital receipt generation.
+- **Menu & Catalog Management:** Organize item categories, pricing, unit costs, food images, and instant 86'd availability toggles.
+- **Reports & Analytics:** Filter transactions by date range or quick presets (Today, This Week, This Month) and export directly to CSV, Excel, or PDF.
+- **Role-Based Security:** Separate roles for Administrators and Cashiers, BCrypt password hashing, rate-limiting, and comprehensive audit logs.
+- **Hardware & Settings:** Support for standard and ESC/POS thermal receipt printers, BIR permit registration, and one-click database backups.
+
+---
 
 ## Tech Stack
 
 | Category | Technology |
 | :--- | :--- |
-| **Language** | Java (JDK 21) |
-| **GUI Framework** | Java Swing (enhanced with [FlatLaf](https://www.formdev.com/flatlaf/) & [MigLayout](http://www.miglayout.com/)) |
+| **Language** | Java (JDK 21+) |
+| **GUI Framework** | Java Swing with [FlatLaf](https://www.formdev.com/flatlaf/) and [MigLayout](http://www.miglayout.com/) |
+| **Icons** | Embedded Lucide vector graphics |
+| **Persistence** | Embedded SQLite with [Flyway](https://flywaydb.org/) migrations and [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pooling |
+| **Security** | BCrypt password hashing and audit logging |
 | **Build Tool** | Apache Maven |
-| **Database & Persistence** | Embedded SQLite managed via [Flyway](https://flywaydb.org/) & [HikariCP](https://github.com/brettwooldridge/HikariCP) |
-| **Security** | BCrypt password hashing & secure session management |
-| **Development Tools** | Eclipse IDE & Visual Studio Code |
+| **Packaging** | JPackage native bundle & Inno Setup installer |
 
-## Screenshots & Demo
+---
 
-### Executive Dashboard
-![Executive Dashboard](./screenshots/executive_dashboard.png)
+## Installation & Getting Started
 
-### POS Terminal
-![POS Terminal](./screenshots/pos_terminal.png)
+You do **not** need to clone or compile the repository to run Restaurant POS. Choose your preferred installation method below:
 
-### Login Screen
-![Login Screen](./screenshots/login_screen.png)
+### Option 1: Standalone Windows Installer (`.exe`)
 
-## Getting Started
+For Windows users who want a standard setup wizard:
+1. Download the latest **`RestaurantPOS-Setup.exe`** from the [Releases](https://github.com/alxxrzfyr/restaurant-pos/releases) page.
+2. Double-click the installer and follow the setup prompts.
+3. Launch **Restaurant POS** from your Desktop shortcut or Start Menu.
 
-### Prerequisites
+---
 
-- **Java Development Kit (JDK):** Version 21 is required. [Download JDK 21 here](https://adoptium.net/).
-- **Build Tool:** Maven 3.8+. To check if it's already installed, open your terminal and run `mvn -v`. If it's missing, [install Maven here](https://maven.apache.org/install.html).
-- **Database:** SQLite (embedded). No external database server or installation is required!
-- **Recommended IDE (Optional):** [IntelliJ IDEA](https://www.jetbrains.com/idea/), Eclipse, or NetBeans. (This is entirely optional. You can run the app directly via the command line).
+### Option 2: Automated 1-Click Installer Scripts
 
-### Step 1: Clone the Repository
-
-Open your terminal and clone the repository using Git:
-
+#### On Linux / macOS:
+If you have the distribution archive or repository:
 ```bash
-git clone https://github.com/yourusername/restaurant-pos.git
-cd restaurant-pos
+./install.sh
 ```
-*(Alternatively, if you don't use Git, you can click **Code > Download ZIP** on GitHub and extract the folder).*
+*This verifies your Java 21+ runtime, installs application binaries into `~/.local/share/restaurant-pos`, creates a `restaurant-pos` terminal command, and generates a Linux desktop launcher shortcut.*
 
-### Step 2: Verify Java Installation
-
-Ensure your system is using the correct Java version by running:
-
-```bash
-java -version
+#### On Windows:
+Double-click `install.bat` or execute in Command Prompt:
+```cmd
+install.bat
 ```
-**Expected Output:** You should see `openjdk version "21.x.x"` (or similar). 
-*If you get a "command not found" error, or it shows an older version like Java 8 or 11, please install JDK 21 and ensure it is added to your system's PATH.*
+*This installs the application to `%LOCALAPPDATA%\RestaurantPOS` and creates a desktop shortcut.*
 
-### Step 3: Set Up the Database
+---
 
-Because this project uses **SQLite** (a zero-configuration, file-based database) and **Flyway** (for automatic schema migrations), **no manual database setup is required!** 
+### Option 3: Run Directly from Executable Fat JAR
 
-The database file (`restaurant-pos.db`) and all necessary tables will automatically be generated in the project root folder the very first time you launch the application.
-
-*(If you ever need to view the raw database configuration, the SQLite driver setup is handled internally within the `DataSourceProvider.java` and `AppConfig.java` classes).*
-
-### Step 4: Build the Project
-
-Use Maven to download dependencies, compile the code, and package the application into a single executable JAR file. Run this command in the project root:
-
-```bash
-mvn clean install
-```
-
-### Step 5: Run the Application
-
-You can launch the application in a few different ways:
-
-**Option A: Via the compiled JAR file**
+If you already have Java 21+ installed on your machine:
 ```bash
 java -jar target/app.jar
 ```
 
-**Option B: Directly via Maven**
+---
+
+### Option 4: Build and Run from Source (Developers)
+
+#### Prerequisites
+- **Java Development Kit (JDK):** Version 21 is required. ([Download Eclipse Temurin JDK 21](https://adoptium.net/))
+- **Build Tool:** Maven 3.8+ (`mvn -v`). ([Download Maven](https://maven.apache.org/install.html))
+- **Database:** SQLite (embedded). No external database server or installation is required!
+
+#### Build Steps
 ```bash
-mvn exec:java -Dexec.mainClass="com.restaurant.pos.Main"
+# 1. Clone repository
+git clone https://github.com/alxxrzfyr/restaurant-pos.git
+cd restaurant-pos
+
+# 2. Package fat JAR
+mvn clean package -DskipTests
+
+# 3. Launch from source
+mvn compile exec:java -Dexec.mainClass="com.restaurant.pos.Main"
 ```
 
-**Option C: Via an IDE**
-Open the `restaurant-pos` folder in your preferred IDE, locate `src/main/java/com/restaurant/pos/Main.java`, and click **Run**.
+---
 
-### Step 6: First-Time Setup / Login
+## Default Login Credentials
 
-When the application launches for the first time, the database will initialize. Log in using the default administrator credentials:
+The system automatically initializes an embedded SQLite database (`restaurant-pos.db`) on first launch with the following default accounts:
 
-- **Username:** `admin`
-- **Password:** `admin123`
+| Role | Username | Default Password | Access Scope |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin` | `admin123` | Full Access (Dashboard, Menu, Reports, Users, Settings) |
+| **Cashier** | `cashier1` | `cashier123` | POS Terminal, Orders, and Shift History |
 
-> **Important:** Please navigate to the "Users" or "Settings" section inside the dashboard and change your password immediately after your first login!
+> **Security Note:** Navigate to the "Users" or "Settings" section inside the dashboard and change your administrator password immediately after first login.
 
-### Troubleshooting
-
-| Problem | Likely Cause | Fix |
-| :--- | :--- | :--- |
-| **`UnsupportedClassVersionError`** | You are running an older version of Java (e.g., Java 8 or 11). | Install JDK 21 and ensure it's set as your default `java` command. |
-| **`mvn: command not found`** | Maven is not installed or not added to your system PATH. | Download and install Maven, then add its `bin` folder to your PATH environment variable. |
-| **App won't launch / Blank screen** | Conflicting library versions or a corrupted build folder. | Run `mvn clean install` again to rebuild everything fresh from scratch. |
-
-### Uninstalling / Cleanup
-
-To completely remove the application and all its data, simply delete the `restaurant-pos` folder. Since the embedded SQLite database (`restaurant-pos.db`) is stored locally inside this directory, deleting the folder wipes all local data securely. No leftover background services will remain running!
+---
 
 ## Usage Guide
 
-1. **First Launch:** When you run the application for the very first time, the database will be created. Log in using the default admin credentials (you should change these immediately).
-2. **Dashboard:** Upon login, Administrators are greeted with the Executive Dashboard, summarizing gross revenue, total orders, and top-selling items.
-3. **Menu Setup:** Navigate to the "Menu" section via the sidebar to add categories (e.g., "Mains", "Drinks") and populate your menu items.
-4. **Point of Sale (Cashier):** Switch to the "Orders" tab (or log in as a Cashier) to open the POS terminal. Click items to add them to the cart, review the order, and hit "Checkout" to process payment and generate a receipt.
-5. **Reports:** At the end of the day, go to the "Reports" section to export a summary of all sales and cashier performance to CSV.
+1. **First Launch:** Launch the application. SQLite and Flyway will automatically configure the schema without manual database setup.
+2. **Executive Dashboard:** View gross and net revenues, top-performing items, sales distribution charts, and recent transaction history.
+3. **Menu Management:** Use the sidebar to create food categories and configure menu items with prices, costs, photos, and availability status.
+4. **Point of Sale (Cashier):** Open the POS terminal to select items, adjust quantities, select order type (Dine-In or Take-Out), enter table numbers, and process payment.
+5. **Reports & Exports:** Filter sales records by date presets (Today, This Week, This Month) and export transaction logs to CSV, Excel, or PDF.
+6. **System Configuration:** Configure business TIN, BIR permit details, receipt headers, and trigger one-click database backups from the Settings center.
+
+---
+
+## Troubleshooting & FAQ
+
+| Issue | Likely Cause | Solution |
+| :--- | :--- | :--- |
+| **`UnsupportedClassVersionError`** | Running an older Java version (e.g. Java 8, 11, or 17). | Install JDK 21+ and set it as your default `JAVA_HOME` / PATH. |
+| **`mvn: command not found`** | Maven is not installed or not in system PATH. | Install Apache Maven or run directly using the standalone `.exe` / `app.jar`. |
+| **Database locked error** | Another instance of Restaurant POS is already running. | Close any running POS instances in Task Manager / System Monitor before relaunching. |
+| **Thermal printer not detected** | Printer driver is offline or disconnected. | Check USB cable connection and configure the printer driver in *Settings > Receipt Printer Setup*. |
+| **Corrupted database** | Unsaved crash or system interruption. | Restore your latest backup archive via *Settings > Database Maintenance > Restore Database*. |
+
+---
 
 ## Project Structure
 
 ```text
 restaurant-pos/
+├── installer/            # Native packaging and Inno Setup installer scripts
+│   ├── RestaurantPOS-InnoSetup.iss
+│   └── build-package.sh
 ├── src/
 │   ├── main/java/com/restaurant/pos/
-│   │   ├── ui/           # Swing UI panels, forms, dialogs, and components
+│   │   ├── config/       # Application configuration and settings
+│   │   ├── exception/    # Custom domain exceptions
 │   │   ├── model/        # Domain entities (Order, User, MenuItem, Category, etc.)
-│   │   ├── repository/   # Data Access Objects (SQLite JDBC implementations)
-│   │   ├── service/      # Core business logic and application services
-│   │   ├── security/     # Authentication, password hashing, and rate limiting
-│   │   ├── exception/    # Custom application exceptions
-│   │   ├── config/       # Application configuration classes
+│   │   ├── repository/   # SQLite JDBC repositories
+│   │   ├── security/     # BCrypt hashing, session state, rate limiters
+│   │   ├── service/      # Core business logic and reporting engines
+│   │   ├── ui/           # Swing user interface (FlatLaf, MigLayout, Dialogs)
 │   │   └── Main.java     # Application entry point
-│   └── main/resources/   # Application icons, images, SQL migrations, and properties
-├── pom.xml               # Maven configuration and dependencies
-└── README.md             # This file
+│   └── main/resources/   # Lucide SVG vector assets, SQL migrations, database schemas
+├── install.sh            # Linux & macOS 1-click installer
+├── install.bat           # Windows 1-click installer
+├── pom.xml               # Maven dependencies and shading configuration
+└── README.md             # Project documentation
 ```
+
+---
 
 ## Known Limitations & Future Improvements
 
-- **UI Responsiveness:** While the UI uses `MigLayout` to handle resizing gracefully, extremely small or unusual screen resolutions may clip some components. It is optimized for standard desktop displays (e.g., 1366x768 and up).
-- **Local Storage Only:** The application currently relies on a local SQLite database, meaning it is designed for a single physical terminal. Future improvements could involve migrating to PostgreSQL or MySQL for multi-terminal network synchronization.
-- **Testing:** While core services are covered by unit tests, UI integration tests are currently limited.
+- **Local Persistence:** The application uses an embedded SQLite database optimized for single physical terminals. Future iterations may support multi-terminal server synchronization over PostgreSQL.
+- **Hardware Integration:** Cash drawer pulse triggering via raw ESC/POS kick codes is supported; future builds will expand support for direct serial/OPOS barcode scanners.
+
+---
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+---
+
 ## Acknowledgments
 
-- Built as a personal project to bridge the gap between high school learning and enterprise software engineering.
-- Thanks to the open-source community behind FlatLaf for making Java Swing look incredibly modern and native.
+- Built as a passion project to bridge the gap between high school programming and enterprise-grade software engineering.
+- Thanks to the open-source community behind [FlatLaf](https://www.formdev.com/flatlaf/) and [MigLayout](http://www.miglayout.com/) for modern desktop UI capabilities.
