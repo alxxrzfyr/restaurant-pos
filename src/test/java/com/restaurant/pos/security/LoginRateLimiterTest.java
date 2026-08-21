@@ -17,7 +17,6 @@ class LoginRateLimiterTest {
         assertTrue(rateLimiter.tryAcquire("user1"));
         assertTrue(rateLimiter.tryAcquire("user1"));
 
-        // 4th attempt should be blocked
         assertFalse(rateLimiter.tryAcquire("user1"));
     }
 
@@ -29,7 +28,6 @@ class LoginRateLimiterTest {
         assertTrue(rateLimiter.tryAcquire("userA"));
         assertFalse(rateLimiter.tryAcquire("userA"));
 
-        // userB should still be permitted
         assertTrue(rateLimiter.tryAcquire("userB"));
     }
 

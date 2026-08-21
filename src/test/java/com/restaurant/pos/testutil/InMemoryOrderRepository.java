@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** In-memory {@link OrderRepository} fake for service-layer unit tests. */
 public final class InMemoryOrderRepository implements OrderRepository {
 
     private final Map<Long, Order> ordersById = new LinkedHashMap<>();

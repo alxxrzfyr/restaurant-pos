@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** In-memory {@link AuditEventRepository} fake for service-layer unit tests. */
 public final class InMemoryAuditEventRepository implements AuditEventRepository {
 
     private final List<AuditEvent> events = new ArrayList<>();

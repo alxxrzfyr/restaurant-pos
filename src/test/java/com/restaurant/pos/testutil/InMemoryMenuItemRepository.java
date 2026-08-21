@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** In-memory {@link MenuItemRepository} fake for service-layer unit tests. */
 public final class InMemoryMenuItemRepository implements MenuItemRepository {
 
     private final Map<Long, MenuItem> itemsById = new LinkedHashMap<>();

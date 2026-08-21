@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** In-memory {@link CategoryRepository} fake for service-layer unit tests. */
 public final class InMemoryCategoryRepository implements CategoryRepository {
 
     private final Map<Long, Category> categoriesById = new LinkedHashMap<>();

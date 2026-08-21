@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** In-memory {@link UserRepository} fake for service-layer unit tests. */
 public final class InMemoryUserRepository implements UserRepository {
 
     private final Map<Long, User> usersById = new LinkedHashMap<>();

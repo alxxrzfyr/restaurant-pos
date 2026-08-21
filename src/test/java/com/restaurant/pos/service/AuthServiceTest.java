@@ -112,7 +112,6 @@ class AuthServiceTest {
         assertThrows(AuthenticationException.class, () -> throttledAuthService.login("spammer", "wrong".toCharArray()));
         assertThrows(AuthenticationException.class, () -> throttledAuthService.login("spammer", "wrong".toCharArray()));
 
-        // 3rd attempt triggered by rate limiter rejection
         AuthenticationException ex = assertThrows(AuthenticationException.class,
                 () -> throttledAuthService.login("spammer", "password123".toCharArray()));
         assertTrue(ex.getMessage().contains("Too many login attempts"));

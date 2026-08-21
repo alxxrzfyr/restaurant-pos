@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/** In-memory {@link SettingsRepository} fake for service-layer unit tests. */
 public final class InMemorySettingsRepository implements SettingsRepository {
 
     private final Map<String, String> values = new LinkedHashMap<>();

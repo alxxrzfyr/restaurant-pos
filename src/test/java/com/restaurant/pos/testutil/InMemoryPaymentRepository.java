@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/** In-memory {@link PaymentRepository} fake for service-layer unit tests. */
 public final class InMemoryPaymentRepository implements PaymentRepository {
 
     private final Map<Long, Payment> paymentsByOrderId = new LinkedHashMap<>();

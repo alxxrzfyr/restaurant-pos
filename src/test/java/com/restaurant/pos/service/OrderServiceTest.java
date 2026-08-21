@@ -74,7 +74,6 @@ class OrderServiceTest {
 
         OrderTotals totals = orderService.calculateTotals(cart);
 
-        // Taxable amount is 80.00 - 10.00 = 70.00, so VAT is 12% of 70.00, not of 80.00.
         assertEquals(Money.of(new BigDecimal("8.40")), totals.vat());
         assertEquals(Money.of(new BigDecimal("78.40")), totals.totalDue());
     }
