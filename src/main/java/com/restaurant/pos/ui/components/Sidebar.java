@@ -29,7 +29,7 @@ import java.util.Map;
 
 public final class Sidebar extends JPanel {
 
-    public static final int WIDTH = 224;
+    public static final int WIDTH = 236;
 
     private final Container contentContainer;
     private final CardLayout cardLayout;
@@ -37,7 +37,7 @@ public final class Sidebar extends JPanel {
     private final Map<String, NavButton> buttonsByKey = new LinkedHashMap<>();
 
     private final JPanel topContainer = new JPanel(new MigLayout("insets 0, wrap 1, fillx", "[grow, fill]"));
-    private final JPanel navItemsPanel = new JPanel(new MigLayout("insets 8 0 8 0, wrap 1, fillx, gapy 2", "[grow, fill]"));
+    private final JPanel navItemsPanel = new JPanel(new MigLayout("insets 6 0 6 0, wrap 1, fillx, gapy 2", "[grow, fill]"));
     private final LogoutNavButton logoutButton = new LogoutNavButton("Log Out");
 
     private User currentUser;
@@ -75,18 +75,40 @@ public final class Sidebar extends JPanel {
     }
 
     private JPanel buildHeader() {
-        JPanel header = new JPanel(new MigLayout("insets 14 16 12 16, fillx, wrap 1", "[grow, fill]"));
+        JPanel header = new JPanel(new MigLayout("insets 16 16 14 16, fillx, wrap 1", "[grow, fill]"));
         header.setOpaque(false);
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.BORDER));
 
-        JPanel brand = new JPanel(new MigLayout("insets 0", "[]10[]"));
+        JPanel brand = new JPanel(new MigLayout("insets 0", "[]10[grow]"));
         brand.setOpaque(false);
 
+        JLabel brandIcon = new JLabel(Icons.brand(Color.WHITE, 16));
+        JPanel iconBadge = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(AppTheme.PRIMARY);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        iconBadge.setOpaque(false);
+        iconBadge.setPreferredSize(new Dimension(32, 32));
+        brandIcon.setHorizontalAlignment(SwingConstants.CENTER);
+        iconBadge.add(brandIcon, BorderLayout.CENTER);
+        brand.add(iconBadge);
+
+        JPanel titleBox = new JPanel(new MigLayout("insets 0, wrap 1, gapy 0"));
+        titleBox.setOpaque(false);
 
         JLabel title = new JLabel("RESTAURANT POS");
-        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
-        title.setForeground(new Color(30, 41, 59));
-        brand.add(title);
+        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
+        title.setForeground(AppTheme.TEXT_PRIMARY);
+
+        titleBox.add(title);
+        brand.add(titleBox, "growx");
 
         header.add(brand, "growx");
         return header;
@@ -104,18 +126,18 @@ public final class Sidebar extends JPanel {
         profileCard.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.BORDER));
 
         photoPanel = new ProfilePhotoPanel(user.photoPath(), user.displayName(), false);
-        profileCard.add(photoPanel, "w 44!, h 44!");
+        profileCard.add(photoPanel, "w 40!, h 40!");
 
-        JPanel info = new JPanel(new MigLayout("insets 0, wrap 1, gapy 2"));
+        JPanel info = new JPanel(new MigLayout("insets 0, wrap 1, gapy 1"));
         info.setOpaque(false);
 
         JLabel nameLabel = new JLabel(user.displayName());
-        nameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+        nameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
         nameLabel.setForeground(AppTheme.TEXT_PRIMARY);
 
         String roleText = formatRoleName(user);
         JLabel roleLabel = new JLabel(roleText);
-        roleLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        roleLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
         roleLabel.setForeground(AppTheme.TEXT_SECONDARY);
 
         info.add(nameLabel);
@@ -136,14 +158,14 @@ public final class Sidebar extends JPanel {
     public void addSection(String title) {
         if (firstSectionAdded) {
             JPanel divider = new JPanel();
-            divider.setBackground(new Color(226, 232, 240));
-            navItemsPanel.add(divider, "growx, h 1!, gapleft 16, gapright 16, gaptop 12, gapbottom 6");
+            divider.setBackground(AppTheme.BORDER);
+            navItemsPanel.add(divider, "growx, h 1!, gapleft 16, gapright 16, gaptop 10, gapbottom 4");
         }
         firstSectionAdded = true;
 
         JLabel sectionLabel = new JLabel(title.toUpperCase());
-        sectionLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
-        sectionLabel.setForeground(new Color(148, 163, 184));
+        sectionLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
+        sectionLabel.setForeground(AppTheme.TEXT_MUTED);
         sectionLabel.setBorder(BorderFactory.createEmptyBorder(6, 16, 4, 16));
         navItemsPanel.add(sectionLabel, "growx");
     }
@@ -172,7 +194,7 @@ public final class Sidebar extends JPanel {
         footer.setOpaque(false);
         footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, AppTheme.BORDER));
 
-        footer.add(logoutButton, "growx, h 44!");
+        footer.add(logoutButton, "growx, h 42!");
         return footer;
     }
 
@@ -200,7 +222,7 @@ public final class Sidebar extends JPanel {
     private String formatRoleName(User user) {
         if (user == null || user.role() == null) return "";
         if (user.role() == Role.ADMINISTRATOR) {
-            return "System Administrator";
+            return "Administrator";
         } else if (user.role() == Role.CASHIER) {
             return "Cashier";
         }
@@ -209,24 +231,25 @@ public final class Sidebar extends JPanel {
     }
 
     private Icon resolveIcon(String key, boolean active) {
-        int size  = 20;
-        Color col = active ? AppTheme.PRIMARY : AppTheme.TEXT_SECONDARY;
+        int size  = 18;
+        Color col = active ? Color.WHITE : AppTheme.TEXT_SECONDARY;
         return switch (key) {
             case "DASHBOARD"                    -> Icons.dashboard(col, size);
             case "NEW_ORDER"                    -> Icons.orders(col, size);
-            case "ORDER_HISTORY"                -> Icons.orders(col, size);
-            case "MENU", "MENU_LOOKUP"          -> Icons.menu(col, size);
+            case "ORDER_HISTORY"                -> Icons.fileText(col, size);
+            case "MENU", "MENU_LOOKUP"          -> Icons.bookOpen(col, size);
             case "REPORTS"                      -> Icons.reports(col, size);
             case "SETTINGS"                     -> Icons.settings(col, size);
             case "USERS"                        -> Icons.users(col, size);
-            default                             -> Icons.menu(col, size);
+            default                             -> Icons.bookOpen(col, size);
         };
     }
 
     private static final class LogoutNavButton extends JButton {
-        private static final Color HOVER_BG  = new Color(254, 242, 242);
-        private static final Color ACTIVE_BG = new Color(254, 226, 226);
-        private static final Color TEXT_NORMAL = new Color(71, 85, 105);
+        private static final Color HOVER_BG    = Color.decode("#FEF2F2");
+        private static final Color ACTIVE_BG   = Color.decode("#FEE2E2");
+        private static final Color TEXT_NORMAL = Color.decode("#64748B");
+        private static final int   RADIUS      = 8;
 
         private final Icon inactiveIcon;
         private final Icon activeIcon;
@@ -235,8 +258,8 @@ public final class Sidebar extends JPanel {
         public LogoutNavButton(String label) {
             super(label);
             this.labelText    = label;
-            this.inactiveIcon = Icons.logout(TEXT_NORMAL, 20);
-            this.activeIcon   = Icons.logout(AppTheme.DANGER, 20);
+            this.inactiveIcon = Icons.logout(TEXT_NORMAL, 18);
+            this.activeIcon   = Icons.logout(AppTheme.DANGER, 18);
 
             setIcon(inactiveIcon);
             setIconTextGap(12);
@@ -244,9 +267,9 @@ public final class Sidebar extends JPanel {
             setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
             setFocusPainted(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setPreferredSize(new Dimension(WIDTH, 44));
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
-            setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
+            setPreferredSize(new Dimension(WIDTH, 42));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+            setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 16));
             setContentAreaFilled(false);
         }
 
@@ -260,7 +283,7 @@ public final class Sidebar extends JPanel {
                 setText(labelText);
                 setToolTipText(null);
                 setHorizontalAlignment(SwingConstants.LEFT);
-                setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
+                setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 16));
             }
             revalidate();
             repaint();
@@ -273,15 +296,14 @@ public final class Sidebar extends JPanel {
 
             int w = getWidth();
             int h = getHeight();
+            int insetX = 10;
+            int insetY = 2;
+            int pillW = w - (insetX * 2);
+            int pillH = h - (insetY * 2);
 
             if (getModel().isPressed()) {
                 g2.setColor(ACTIVE_BG);
-                g2.fillRect(0, 0, w, h);
-                setForeground(AppTheme.DANGER);
-                setIcon(activeIcon);
-            } else if (getModel().isRollover()) {
-                g2.setColor(HOVER_BG);
-                g2.fillRect(0, 0, w, h);
+                g2.fillRoundRect(insetX, insetY, pillW, pillH, RADIUS, RADIUS);
                 setForeground(AppTheme.DANGER);
                 setIcon(activeIcon);
             } else {

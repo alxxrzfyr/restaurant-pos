@@ -125,6 +125,66 @@ public final class Icons {
         return svg("user", color, size);
     }
 
+    public static Icon trendingUp(Color color, int size) {
+        return svg("trending-up", color, size);
+    }
+
+    public static Icon trendingDown(Color color, int size) {
+        return svg("trending-down", color, size);
+    }
+
+    public static Icon creditCard(Color color, int size) {
+        return svg("credit-card", color, size);
+    }
+
+    public static Icon banknote(Color color, int size) {
+        return svg("banknote", color, size);
+    }
+
+    public static Icon shoppingBag(Color color, int size) {
+        return svg("shopping-bag", color, size);
+    }
+
+    public static Icon utensils(Color color, int size) {
+        return svg("utensils", color, size);
+    }
+
+    public static Icon packageIcon(Color color, int size) {
+        return svg("package", color, size);
+    }
+
+    public static Icon database(Color color, int size) {
+        return svg("database", color, size);
+    }
+
+    public static Icon shield(Color color, int size) {
+        return svg("shield", color, size);
+    }
+
+    public static Icon check(Color color, int size) {
+        return svg("check", color, size);
+    }
+
+    public static Icon chevronRight(Color color, int size) {
+        return svg("chevron-right", color, size);
+    }
+
+    public static Icon percent(Color color, int size) {
+        return svg("percent", color, size);
+    }
+
+    public static Icon layers(Color color, int size) {
+        return svg("layers", color, size);
+    }
+
+    public static Icon star(Color color, int size) {
+        return svg("star", color, size);
+    }
+
+    public static Icon bookOpen(Color color, int size) {
+        return svg("book-open", color, size);
+    }
+
     private static Icon svg(String name, Color color, int size) {
         FlatSVGIcon icon = new FlatSVGIcon("icons/lucide/" + name + ".svg", size, size);
         icon.setColorFilter(new FlatSVGIcon.ColorFilter(c -> color));

@@ -16,11 +16,13 @@ import java.awt.RenderingHints;
 
 public final class NavButton extends JToggleButton {
 
-    private static final int    HEIGHT      = 44;
-    private static final Color  ACTIVE_BG   = new Color(239, 246, 255);
-    private static final Color  HOVER_BG    = new Color(248, 250, 252);
-    private static final Color  TEXT_NORMAL = new Color(71, 85, 105);
-    private static final int    INDICATOR   = 3;
+    private static final int    HEIGHT        = 42;
+    private static final Color  ACTIVE_BG     = Color.decode("#0F172A");
+    private static final Color  ACTIVE_FG     = Color.decode("#FFFFFF");
+    private static final Color  HOVER_BG      = Color.decode("#F1F5F9");
+    private static final Color  HOVER_FG      = Color.decode("#0F172A");
+    private static final Color  TEXT_NORMAL   = Color.decode("#64748B");
+    private static final int    RADIUS        = 8;
 
     private final Icon inactiveIcon;
     private final Icon activeIcon;
@@ -43,7 +45,7 @@ public final class NavButton extends JToggleButton {
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         setPreferredSize(new Dimension(224, HEIGHT));
         setMaximumSize(new Dimension(Integer.MAX_VALUE, HEIGHT));
-        setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
+        setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 16));
         setContentAreaFilled(false);
     }
 
@@ -62,7 +64,7 @@ public final class NavButton extends JToggleButton {
             setText(labelText);
             setToolTipText(null);
             setHorizontalAlignment(SwingConstants.LEFT);
-            setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
+            setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 16));
         }
         revalidate();
         repaint();
@@ -75,29 +77,22 @@ public final class NavButton extends JToggleButton {
 
         int w = getWidth();
         int h = getHeight();
+        int insetX = collapsed ? 6 : 10;
+        int insetY = 2;
+        int pillW = w - (insetX * 2);
+        int pillH = h - (insetY * 2);
 
         if (!isEnabled()) {
             g2.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.4f));
         }
 
         if (isSelected()) {
-
             g2.setColor(ACTIVE_BG);
-            g2.fillRect(0, 0, w, h);
-            g2.setColor(AppTheme.PRIMARY);
-            g2.fillRect(0, 0, INDICATOR, h);
-            setForeground(AppTheme.PRIMARY);
+            g2.fillRoundRect(insetX, insetY, pillW, pillH, RADIUS, RADIUS);
+            setForeground(ACTIVE_FG);
             setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
             setIcon(activeIcon);
-        } else if (getModel().isRollover()) {
-
-            g2.setColor(HOVER_BG);
-            g2.fillRect(0, 0, w, h);
-            setForeground(AppTheme.TEXT_PRIMARY);
-            setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
-            setIcon(inactiveIcon);
         } else {
-
             setForeground(TEXT_NORMAL);
             setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
             setIcon(inactiveIcon);

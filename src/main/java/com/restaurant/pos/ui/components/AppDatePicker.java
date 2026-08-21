@@ -38,13 +38,13 @@ public final class AppDatePicker extends JPanel {
 
         JButton btn = datePicker.getComponentToggleCalendarButton();
         btn.setText("");
-        btn.setIcon(Icons.calendar(AppTheme.PRIMARY, 16));
+        btn.setIcon(Icons.calendar(AppTheme.TEXT_PRIMARY, 15));
         btn.setBackground(AppTheme.CARD);
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(AppTheme.BORDER),
-                BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+                BorderFactory.createEmptyBorder(2, 8, 2, 8)));
 
         JTextField tf = datePicker.getComponentDateTextField();
         tf.setFont(AppTheme.bodyFont());
@@ -55,7 +55,7 @@ public final class AppDatePicker extends JPanel {
         tf.setForeground(AppTheme.TEXT_PRIMARY);
         tf.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(AppTheme.BORDER),
-                BorderFactory.createEmptyBorder(2, 8, 2, 8)));
+                BorderFactory.createEmptyBorder(2, 10, 2, 10)));
 
         tf.addMouseListener(new MouseAdapter() {
             @Override
