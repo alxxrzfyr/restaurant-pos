@@ -60,12 +60,12 @@ public final class OrderService {
 
         OrderTotals totals = calculateTotals(cart);
         Money change = calculateChange(totals.totalDue(), amountTendered);
-        
+
         String transactionId = null;
         if (paymentMethod != PaymentMethod.CASH) {
             transactionId = paymentProcessor.processPayment(paymentMethod, amountTendered);
         }
-        
+
         Instant now = Instant.now();
 
         List<OrderLineItem> lineItems = cart.lines().stream().map(OrderLineItem::fromCartLine).toList();

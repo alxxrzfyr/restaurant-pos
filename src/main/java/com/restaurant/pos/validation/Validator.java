@@ -4,8 +4,7 @@ import java.math.BigDecimal;
 import java.util.regex.Pattern;
 
 public final class Validator {
-    
-    // Alphanumeric, spaces, basic punctuation
+
     private static final Pattern NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9 \\-.,&()']+$");
     private static final Pattern SKU_PATTERN = Pattern.compile("^[a-zA-Z0-9\\-]+$");
 

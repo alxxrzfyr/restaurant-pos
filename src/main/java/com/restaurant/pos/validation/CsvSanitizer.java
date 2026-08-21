@@ -14,7 +14,7 @@ public final class CsvSanitizer {
         }
         return str;
     }
-    
+
     public static Object[] sanitizeArray(Object... values) {
         Object[] sanitized = new Object[values.length];
         for (int i = 0; i < values.length; i++) {
