@@ -33,7 +33,6 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "..\target\app.jar"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\install.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\sample-images\*"; DestDir: "{app}\sample-images"; Flags: ignoreversion recursesubdirs createallsubdirs; Tasks: ; Languages: 
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "javaw.exe"; Parameters: "-jar ""{app}\app.jar"""; WorkingDir: "{app}"
