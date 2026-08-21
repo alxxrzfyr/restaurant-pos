@@ -7,6 +7,7 @@ import com.restaurant.pos.ui.theme.AppTheme;
 import com.restaurant.pos.ui.theme.Icons;
 import net.miginfocom.swing.MigLayout;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -46,18 +47,19 @@ public final class PasswordLogoutDialog extends JDialog {
         JPanel panel = new JPanel(new MigLayout("fillx, insets 24, wrap 1", "[320!]"));
         panel.setBackground(AppTheme.CARD);
 
-        JLabel title = new JLabel("Password Required to Log Out");
+        JLabel title = new JLabel("Authorize Log Out");
         title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
         title.setForeground(AppTheme.TEXT_PRIMARY);
-        panel.add(title, "gapbottom 8");
+        panel.add(title, "gapbottom 4");
 
-        JLabel info = new JLabel("Logged in as: " + currentUser.displayName() + " (" + currentUser.username() + ")");
+        JLabel info = new JLabel("Logged in as " + currentUser.displayName() + " (" + currentUser.username() + ")");
         info.setFont(AppTheme.bodyFont());
         info.setForeground(AppTheme.TEXT_SECONDARY);
-        panel.add(info, "gapbottom 16");
+        panel.add(info, "gapbottom 14");
 
-        JLabel passLabel = new JLabel("Enter your password to authorize logout:");
+        JLabel passLabel = new JLabel("Enter password to confirm:");
         passLabel.setFont(AppTheme.bodyFont());
+        passLabel.setForeground(AppTheme.TEXT_PRIMARY);
         panel.add(passLabel, "gapbottom 4");
 
         passwordField.setFont(AppTheme.bodyFont());
@@ -65,22 +67,26 @@ public final class PasswordLogoutDialog extends JDialog {
 
         errorLabel.setFont(AppTheme.captionFont());
         errorLabel.setForeground(AppTheme.DANGER);
-        panel.add(errorLabel, "gapbottom 16");
+        panel.add(errorLabel, "gapbottom 14");
 
-        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow]12[grow]"));
+        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow]10[grow]"));
         buttonPanel.setOpaque(false);
 
         JButton cancelBtn = new JButton("Cancel");
         cancelBtn.setFont(AppTheme.bodyFont());
+        cancelBtn.setBackground(AppTheme.CARD);
+        cancelBtn.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        cancelBtn.setFocusPainted(false);
         cancelBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cancelBtn.addActionListener(e -> dispose());
 
         JButton logoutBtn = new JButton("Log Out");
         logoutBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
         logoutBtn.setIcon(Icons.logout(Color.WHITE, 16));
-        logoutBtn.setIconTextGap(8);
+        logoutBtn.setIconTextGap(6);
         logoutBtn.setBackground(AppTheme.DANGER);
         logoutBtn.setForeground(Color.WHITE);
+        logoutBtn.setFocusPainted(false);
         logoutBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         logoutBtn.addActionListener(e -> onConfirmLogout());
 
