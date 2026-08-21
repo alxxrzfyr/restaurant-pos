@@ -7,6 +7,7 @@ import com.restaurant.pos.ui.theme.AppTheme;
 import com.restaurant.pos.ui.theme.Icons;
 import net.miginfocom.swing.MigLayout;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -53,14 +54,16 @@ public final class ConfirmVoidDialog extends JDialog {
         JLabel title = new JLabel("Void Order #" + orderNumber);
         title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
         title.setForeground(AppTheme.DANGER);
-        panel.add(title, "gapbottom 8");
+        panel.add(title, "gapbottom 6");
 
         JLabel info = new JLabel("Re-enter your password to authorize this void action:");
         info.setFont(AppTheme.bodyFont());
+        info.setForeground(AppTheme.TEXT_SECONDARY);
         panel.add(info, "gapbottom 12");
 
         JLabel reasonLabel = new JLabel("Reason for Void:");
         reasonLabel.setFont(AppTheme.bodyFont());
+        reasonLabel.setForeground(AppTheme.TEXT_PRIMARY);
         panel.add(reasonLabel, "gapbottom 4");
 
         reasonField.setFont(AppTheme.bodyFont());
@@ -68,6 +71,7 @@ public final class ConfirmVoidDialog extends JDialog {
 
         JLabel passLabel = new JLabel("Admin Password:");
         passLabel.setFont(AppTheme.bodyFont());
+        passLabel.setForeground(AppTheme.TEXT_PRIMARY);
         panel.add(passLabel, "gapbottom 4");
 
         passwordField.setFont(AppTheme.bodyFont());
@@ -75,22 +79,26 @@ public final class ConfirmVoidDialog extends JDialog {
 
         errorLabel.setFont(AppTheme.captionFont());
         errorLabel.setForeground(AppTheme.DANGER);
-        panel.add(errorLabel, "gapbottom 16");
+        panel.add(errorLabel, "gapbottom 14");
 
-        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow]12[grow]"));
+        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow]10[grow]"));
         buttonPanel.setOpaque(false);
 
         JButton cancelBtn = new JButton("Cancel");
         cancelBtn.setFont(AppTheme.bodyFont());
+        cancelBtn.setBackground(AppTheme.CARD);
+        cancelBtn.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        cancelBtn.setFocusPainted(false);
         cancelBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cancelBtn.addActionListener(e -> dispose());
 
         JButton confirmBtn = new JButton("Void Order");
         confirmBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
         confirmBtn.setIcon(Icons.xCircle(Color.WHITE, 16));
-        confirmBtn.setIconTextGap(8);
+        confirmBtn.setIconTextGap(6);
         confirmBtn.setBackground(AppTheme.DANGER);
         confirmBtn.setForeground(Color.WHITE);
+        confirmBtn.setFocusPainted(false);
         confirmBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         confirmBtn.addActionListener(e -> onConfirmVoid());
 

@@ -7,31 +7,37 @@ import com.restaurant.pos.model.CheckoutResult;
 import com.restaurant.pos.model.Money;
 import com.restaurant.pos.model.PaymentMethod;
 import com.restaurant.pos.service.OrderTotals;
+import com.restaurant.pos.ui.components.PrimaryButton;
+import com.restaurant.pos.ui.components.SecondaryButton;
 import com.restaurant.pos.ui.format.MoneyFormatter;
 import com.restaurant.pos.ui.theme.AppTheme;
 import com.restaurant.pos.ui.theme.Icons;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 final class PaymentDialog extends JDialog {
 
-    private static final int BUTTON_HEIGHT = 44;
-    private static final int INPUT_HEIGHT = 44;
+    private static final int BUTTON_HEIGHT = 48;
+    private static final int INPUT_HEIGHT = 48;
 
     private final AppContext context;
     private final Cart cart;
@@ -39,12 +45,13 @@ final class PaymentDialog extends JDialog {
     private final long cashierId;
     private final String cashierName;
 
-    private final JRadioButton cashRadio = new JRadioButton(PaymentMethod.CASH.displayName(), true);
-    private final JRadioButton debitRadio = new JRadioButton(PaymentMethod.DEBIT_CARD.displayName());
-    private final JRadioButton creditRadio = new JRadioButton(PaymentMethod.CREDIT_CARD.displayName());
+    private PaymentMethod selectedMethod = PaymentMethod.CASH;
+    private final List<MethodCardButton> methodButtons = new ArrayList<>();
+
     private final JTextField tenderedField = new JTextField(14);
-    private final JLabel changeLabel = new JLabel(" ");
+    private final JLabel changeLabel = new JLabel("Enter amount or choose quick preset");
     private final JLabel errorLabel = new JLabel(" ");
+    private final JPanel changeCard = new JPanel(new BorderLayout(8, 0));
 
     private final StringBuilder digits = new StringBuilder();
     private CheckoutResult result;
@@ -63,6 +70,7 @@ final class PaymentDialog extends JDialog {
         setLocationRelativeTo(owner);
         setResizable(false);
 
+        setupShortcuts();
         updateDisplayFromDigits();
     }
 
@@ -70,161 +78,269 @@ final class PaymentDialog extends JDialog {
         return result;
     }
 
-    private JPanel buildContent() {
-        JPanel panel = new JPanel(new MigLayout("insets 24, wrap 1", "[380!]"));
-        panel.setBackground(AppTheme.CARD);
-
-        JLabel title = new JLabel("Process Payment");
-        title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_DASHBOARD_TITLE));
-        title.setForeground(AppTheme.TEXT_PRIMARY);
-        panel.add(title, "gapbottom 8");
-
-        JLabel totalCaption = new JLabel("Total Due: " + MoneyFormatter.format(totals.totalDue()));
-        totalCaption.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
-        totalCaption.setForeground(AppTheme.PRIMARY);
-        panel.add(totalCaption, "gapbottom 16");
-
-        JLabel methodLabel = new JLabel("Payment Method:");
-        methodLabel.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
-        panel.add(methodLabel, "gapbottom 6");
-
-        JPanel methodPanel = new JPanel(new MigLayout("insets 0", "[]16[]16[]"));
-        methodPanel.setOpaque(false);
-        ButtonGroup methodGroup = new ButtonGroup();
-        methodGroup.add(cashRadio);
-        methodGroup.add(debitRadio);
-        methodGroup.add(creditRadio);
-        Font radioFont = AppTheme.titleFont(AppTheme.FONT_SIZE_BODY);
-        cashRadio.setFont(radioFont);
-        cashRadio.setOpaque(false);
-        debitRadio.setFont(radioFont);
-        debitRadio.setOpaque(false);
-        creditRadio.setFont(radioFont);
-        creditRadio.setOpaque(false);
-        methodPanel.add(cashRadio);
-        methodPanel.add(debitRadio);
-        methodPanel.add(creditRadio);
-        panel.add(methodPanel, "gapbottom 12");
-
-        JLabel tenderedLabel = new JLabel("Amount Tendered (\u20B1):");
-        tenderedLabel.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
-        panel.add(tenderedLabel, "gapbottom 4");
-
-        tenderedField.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_DASHBOARD_TITLE));
-        tenderedField.setHorizontalAlignment(SwingConstants.RIGHT);
-        tenderedField.setEditable(false);
-        tenderedField.setBackground(Color.WHITE);
-        tenderedField.setFocusable(true);
+    private void setupShortcuts() {
         tenderedField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
-                    onBackspace();
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    dispose();
                 } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     attemptCheckout();
+                } else if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+                    onBackspace();
                 } else if (e.getKeyChar() >= '0' && e.getKeyChar() <= '9') {
                     appendDigit(e.getKeyChar());
                 }
             }
         });
+    }
+
+    private JPanel buildContent() {
+        JPanel root = new JPanel(new BorderLayout(0, 16));
+        root.setBackground(AppTheme.CARD);
+        root.setBorder(BorderFactory.createEmptyBorder(22, 24, 22, 24));
+
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+
+        JLabel title = new JLabel("Payment Checkout");
+        title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_PAGE_TITLE));
+        title.setForeground(AppTheme.TEXT_PRIMARY);
+
+        JLabel cashierInfo = new JLabel("Cashier: " + cashierName);
+        cashierInfo.setFont(AppTheme.captionFont());
+        cashierInfo.setForeground(AppTheme.TEXT_MUTED);
+
+        headerPanel.add(title, BorderLayout.WEST);
+        headerPanel.add(cashierInfo, BorderLayout.EAST);
+        root.add(headerPanel, BorderLayout.NORTH);
+
+        JPanel splitPane = new JPanel(new MigLayout("insets 0, fill", "[250!]18[390!]", "[grow, fill]"));
+        splitPane.setOpaque(false);
+
+        splitPane.add(buildLeftSummaryPane(), "grow");
+        splitPane.add(buildRightTypingPane(), "grow");
+        root.add(splitPane, BorderLayout.CENTER);
+
+        JPanel footerBar = new JPanel(new MigLayout("insets 14 0 0 0, fillx", "[250!]18[390!]"));
+        footerBar.setOpaque(false);
+
+        SecondaryButton cancelBtn = new SecondaryButton("Cancel (Esc)");
+        cancelBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+        cancelBtn.addActionListener(e -> dispose());
+
+        PrimaryButton confirmBtn = new PrimaryButton("Complete Payment (Enter)", Icons.check(Color.WHITE, 18));
+        confirmBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+        confirmBtn.addActionListener(e -> attemptCheckout());
+
+        footerBar.add(cancelBtn, "growx, h " + BUTTON_HEIGHT + "!");
+        footerBar.add(confirmBtn, "growx, h " + BUTTON_HEIGHT + "!");
+        root.add(footerBar, BorderLayout.SOUTH);
+
+        return root;
+    }
+
+    private JPanel buildLeftSummaryPane() {
+        JPanel panel = new JPanel(new MigLayout("insets 0, fillx, wrap 1"));
+        panel.setOpaque(false);
+
+        JPanel orderCard = new JPanel(new MigLayout("insets 14 14 14 14, fillx, wrap 2", "[grow][right]"));
+        orderCard.setBackground(AppTheme.BACKGROUND);
+        orderCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                BorderFactory.createEmptyBorder(0, 0, 0, 0)));
+
+        JLabel summaryTitle = new JLabel("ORDER SUMMARY");
+        summaryTitle.setFont(AppTheme.titleFont(11));
+        summaryTitle.setForeground(AppTheme.TEXT_MUTED);
+        orderCard.add(summaryTitle, "span 2, gapbottom 8");
+
+        int totalItems = cart.lines().stream().mapToInt(com.restaurant.pos.model.CartLine::quantity).sum();
+        addSummaryRow(orderCard, "Items Count:", totalItems + " (" + cart.lineCount() + " lines)");
+        addSummaryRow(orderCard, "Subtotal:", MoneyFormatter.format(totals.subtotal()));
+        addSummaryRow(orderCard, "VAT (12%):", MoneyFormatter.format(totals.vat()));
+
+        if (totals.discount().isPositive()) {
+            addSummaryRow(orderCard, "Discount:", "- " + MoneyFormatter.format(totals.discount()));
+        }
+
+        JPanel totalBadge = new JPanel(new MigLayout("insets 10 12 10 12, fillx", "[grow][right]"));
+        totalBadge.setBackground(AppTheme.PRIMARY);
+
+        JLabel totalTextLabel = new JLabel("TOTAL DUE");
+        totalTextLabel.setFont(AppTheme.titleFont(10));
+        totalTextLabel.setForeground(Color.decode("#94A3B8"));
+
+        JLabel totalValLabel = new JLabel(MoneyFormatter.format(totals.totalDue()));
+        totalValLabel.setFont(AppTheme.titleFont(16));
+        totalValLabel.setForeground(Color.WHITE);
+
+        totalBadge.add(totalTextLabel, "align left");
+        totalBadge.add(totalValLabel, "align right");
+
+        orderCard.add(totalBadge, "span 2, growx, gaptop 10");
+        panel.add(orderCard, "growx, gapbottom 14");
+
+        JLabel methodLabel = new JLabel("Payment Method");
+        methodLabel.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
+        methodLabel.setForeground(AppTheme.TEXT_PRIMARY);
+        panel.add(methodLabel, "gapbottom 8");
+
+        MethodCardButton cashBtn = new MethodCardButton("Cash", "Currency & Coins", Icons.banknote(AppTheme.TEXT_PRIMARY, 16), PaymentMethod.CASH);
+        MethodCardButton debitBtn = new MethodCardButton("Debit Card", "Swipe / Chip / POS", Icons.creditCard(AppTheme.TEXT_PRIMARY, 16), PaymentMethod.DEBIT_CARD);
+        MethodCardButton creditBtn = new MethodCardButton("Credit Card", "Visa, Mastercard", Icons.creditCard(AppTheme.TEXT_PRIMARY, 16), PaymentMethod.CREDIT_CARD);
+
+        methodButtons.add(cashBtn);
+        methodButtons.add(debitBtn);
+        methodButtons.add(creditBtn);
+
+        cashBtn.setSelectedMethod(true);
+
+        panel.add(cashBtn, "growx, h 44!, gapbottom 6");
+        panel.add(debitBtn, "growx, h 44!, gapbottom 6");
+        panel.add(creditBtn, "growx, h 44!");
+
+        return panel;
+    }
+
+    private void addSummaryRow(JPanel panel, String label, String value) {
+        JLabel l = new JLabel(label);
+        l.setFont(AppTheme.bodyFont());
+        l.setForeground(AppTheme.TEXT_SECONDARY);
+
+        JLabel v = new JLabel(value);
+        v.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+        v.setForeground(AppTheme.TEXT_PRIMARY);
+
+        panel.add(l, "gapbottom 5");
+        panel.add(v, "gapbottom 5");
+    }
+
+    private JPanel buildRightTypingPane() {
+        JPanel panel = new JPanel(new MigLayout("insets 0, fillx, wrap 1"));
+        panel.setOpaque(false);
+
+        JLabel tenderedLabel = new JLabel("Amount Tendered (₱)");
+        tenderedLabel.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
+        tenderedLabel.setForeground(AppTheme.TEXT_PRIMARY);
+        panel.add(tenderedLabel, "gapbottom 4");
+
+        tenderedField.setFont(AppTheme.titleFont(24));
+        tenderedField.setHorizontalAlignment(SwingConstants.RIGHT);
+        tenderedField.setEditable(false);
+        tenderedField.setBackground(AppTheme.BACKGROUND);
+        tenderedField.setForeground(AppTheme.TEXT_PRIMARY);
+        tenderedField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                BorderFactory.createEmptyBorder(4, 16, 4, 16)));
+        tenderedField.setFocusable(true);
         panel.add(tenderedField, "growx, h " + INPUT_HEIGHT + "!, gapbottom 10");
 
-        JPanel presetPanel = new JPanel(new MigLayout("insets 0", "[grow]6[grow]6[grow]"));
+        JPanel presetPanel = new JPanel(new MigLayout("insets 0", "[grow]8[grow]8[grow]"));
         presetPanel.setOpaque(false);
+
         JButton exactBtn = createPresetBtn("Exact");
         exactBtn.addActionListener(e -> setAmount(totals.totalDue()));
 
-        JButton p500Btn = createPresetBtn("\u20B1 500");
+        JButton p500Btn = createPresetBtn("₱ 500");
         p500Btn.addActionListener(e -> setAmount(Money.of(500)));
 
-        JButton p1000Btn = createPresetBtn("\u20B1 1,000");
+        JButton p1000Btn = createPresetBtn("₱ 1,000");
         p1000Btn.addActionListener(e -> setAmount(Money.of(1000)));
 
-        presetPanel.add(exactBtn, "growx, h 34!");
-        presetPanel.add(p500Btn, "growx, h 34!");
-        presetPanel.add(p1000Btn, "growx, h 34!");
-        panel.add(presetPanel, "growx, gapbottom 12");
+        presetPanel.add(exactBtn, "growx, h 36!");
+        presetPanel.add(p500Btn, "growx, h 36!");
+        presetPanel.add(p1000Btn, "growx, h 36!");
+        panel.add(presetPanel, "growx, gapbottom 10");
 
-        panel.add(buildNumpad(), "growx, gapbottom 12");
+        panel.add(buildNumpad(), "growx, gapbottom 10");
 
-        changeLabel.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
-        changeLabel.setForeground(AppTheme.SUCCESS);
-        panel.add(changeLabel, "gapbottom 4");
+        changeCard.setOpaque(true);
+        changeCard.setBackground(AppTheme.BACKGROUND);
+        changeCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                BorderFactory.createEmptyBorder(10, 14, 10, 14)));
+
+        changeLabel.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+        changeLabel.setForeground(AppTheme.TEXT_MUTED);
+        changeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        changeCard.add(changeLabel, BorderLayout.CENTER);
+        panel.add(changeCard, "growx, gapbottom 4");
 
         errorLabel.setForeground(AppTheme.DANGER);
-        errorLabel.setFont(AppTheme.bodyFont());
-        panel.add(errorLabel, "gapbottom 16");
-
-        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow]12[grow]"));
-        buttonPanel.setOpaque(false);
-
-        JButton cancelBtn = new JButton("Cancel");
-        cancelBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
-        cancelBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        cancelBtn.addActionListener(e -> dispose());
-
-        JButton confirmBtn = new JButton("Confirm Payment");
-        confirmBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
-        confirmBtn.setBackground(AppTheme.PRIMARY);
-        confirmBtn.setForeground(Color.WHITE);
-        confirmBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        confirmBtn.addActionListener(e -> attemptCheckout());
-
-        buttonPanel.add(cancelBtn, "growx, h " + BUTTON_HEIGHT + "!");
-        buttonPanel.add(confirmBtn, "growx, h " + BUTTON_HEIGHT + "!");
-        panel.add(buttonPanel, "growx");
+        errorLabel.setFont(AppTheme.captionFont());
+        errorLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        panel.add(errorLabel, "growx");
 
         return panel;
     }
 
     private JButton createPresetBtn(String label) {
-        JButton btn = new JButton(label);
-        btn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_CAPTION));
-        btn.setBackground(AppTheme.BACKGROUND);
-        btn.setForeground(AppTheme.PRIMARY);
-        btn.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        JButton btn = new JButton(label) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(AppTheme.CARD);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.setColor(AppTheme.BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+        btn.setForeground(AppTheme.TEXT_PRIMARY);
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
     }
 
     private PaymentMethod selectedMethod() {
-        if (debitRadio.isSelected()) return PaymentMethod.DEBIT_CARD;
-        if (creditRadio.isSelected()) return PaymentMethod.CREDIT_CARD;
-        return PaymentMethod.CASH;
+        return selectedMethod;
     }
 
     private JPanel buildNumpad() {
-        JPanel pad = new JPanel(new MigLayout("insets 0, gap 6 6, wrap 3", "[grow,fill][grow,fill][grow,fill]"));
+        JPanel pad = new JPanel(new MigLayout("insets 0, gap 8 8, wrap 3", "[grow,fill][grow,fill][grow,fill]"));
         pad.setOpaque(false);
 
-        int padBtnHeight = 40;
-        Font padFont = AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER);
+        int padBtnHeight = 44;
+        Font padFont = AppTheme.titleFont(18);
 
         String[] keys = {"7", "8", "9", "4", "5", "6", "1", "2", "3", "C", "0", "BKSP"};
 
         for (String key : keys) {
-            JButton btn = new JButton();
+            JButton btn = new JButton() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(AppTheme.CARD);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                    g2.setColor(AppTheme.BORDER);
+                    g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
             btn.setFont(padFont);
             btn.setFocusPainted(false);
+            btn.setContentAreaFilled(false);
+            btn.setOpaque(false);
             btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
             if ("C".equals(key)) {
                 btn.setText("C");
-                btn.setBackground(new Color(254, 243, 199));
-                btn.setForeground(AppTheme.WARNING);
-                btn.setBorder(BorderFactory.createLineBorder(new Color(253, 230, 138)));
+                btn.setForeground(AppTheme.DANGER);
                 btn.addActionListener(e -> onClearAll());
             } else if ("BKSP".equals(key)) {
-                btn.setIcon(Icons.backspace(AppTheme.DANGER, 18));
-                btn.setBackground(new Color(254, 226, 226));
-                btn.setForeground(AppTheme.DANGER);
-                btn.setBorder(BorderFactory.createLineBorder(new Color(252, 165, 165)));
+                btn.setIcon(Icons.backspace(AppTheme.TEXT_SECONDARY, 18));
                 btn.addActionListener(e -> onBackspace());
             } else {
                 btn.setText(key);
-                btn.setBackground(AppTheme.BACKGROUND);
                 btn.setForeground(AppTheme.TEXT_PRIMARY);
-                btn.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
                 btn.addActionListener(e -> appendDigit(key.charAt(0)));
             }
 
@@ -268,7 +384,6 @@ final class PaymentDialog extends JDialog {
 
     private void updateDisplayFromDigits() {
         errorLabel.setText(" ");
-        changeLabel.setText(" ");
 
         Money currentMoney;
         if (digits.length() == 0) {
@@ -282,7 +397,19 @@ final class PaymentDialog extends JDialog {
 
         if (!currentMoney.isZero() && currentMoney.compareTo(totals.totalDue()) >= 0) {
             Money change = currentMoney.subtract(totals.totalDue());
-            changeLabel.setText("Change: " + MoneyFormatter.format(change));
+            changeLabel.setText("Change Due: " + MoneyFormatter.format(change));
+            changeLabel.setForeground(AppTheme.SUCCESS);
+            changeCard.setBackground(AppTheme.SUCCESS_BG);
+            changeCard.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(AppTheme.SUCCESS_BORDER, 1),
+                    BorderFactory.createEmptyBorder(10, 14, 10, 14)));
+        } else {
+            changeLabel.setText("Enter amount or choose quick preset");
+            changeLabel.setForeground(AppTheme.TEXT_MUTED);
+            changeCard.setBackground(AppTheme.BACKGROUND);
+            changeCard.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                    BorderFactory.createEmptyBorder(10, 14, 10, 14)));
         }
     }
 
@@ -294,7 +421,6 @@ final class PaymentDialog extends JDialog {
 
     private void attemptCheckout() {
         errorLabel.setText(" ");
-        changeLabel.setText(" ");
 
         Money amountTendered = getTenderedAmount();
 
@@ -305,7 +431,7 @@ final class PaymentDialog extends JDialog {
 
         try {
             Money change = context.orderService().calculateChange(totals.totalDue(), amountTendered);
-            changeLabel.setText("Change: " + MoneyFormatter.format(change));
+            changeLabel.setText("Change Due: " + MoneyFormatter.format(change));
         } catch (InsufficientPaymentException ex) {
             errorLabel.setText("Insufficient. Minimum: " + MoneyFormatter.format(ex.amountDue()));
             return;
@@ -313,5 +439,85 @@ final class PaymentDialog extends JDialog {
 
         result = context.orderService().checkout(cart, cashierId, cashierName, selectedMethod(), amountTendered);
         dispose();
+    }
+
+    private final class MethodCardButton extends JButton {
+        private final String titleText;
+        private final String subtitleText;
+        private final javax.swing.Icon cardIcon;
+        private final PaymentMethod method;
+        private boolean isSelectedMethod = false;
+
+        MethodCardButton(String title, String subtitle, javax.swing.Icon icon, PaymentMethod method) {
+            super();
+            this.titleText = title;
+            this.subtitleText = subtitle;
+            this.cardIcon = icon;
+            this.method = method;
+
+            setLayout(new BorderLayout(10, 0));
+            setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+            setFocusPainted(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setContentAreaFilled(false);
+            setOpaque(false);
+
+            JLabel iconLabel = new JLabel(icon);
+            add(iconLabel, BorderLayout.WEST);
+
+            JPanel textPanel = new JPanel(new MigLayout("insets 0, wrap 1, gapy 0"));
+            textPanel.setOpaque(false);
+
+            JLabel titleLbl = new JLabel(title);
+            titleLbl.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+            titleLbl.setForeground(AppTheme.TEXT_PRIMARY);
+
+            JLabel subLbl = new JLabel(subtitle);
+            subLbl.setFont(AppTheme.captionFont());
+            subLbl.setForeground(AppTheme.TEXT_MUTED);
+
+            textPanel.add(titleLbl);
+            textPanel.add(subLbl);
+            add(textPanel, BorderLayout.CENTER);
+
+            addActionListener(e -> {
+                for (MethodCardButton b : methodButtons) {
+                    b.setSelectedMethod(b == this);
+                }
+                selectedMethod = method;
+                if (method != PaymentMethod.CASH) {
+                    setAmount(totals.totalDue());
+                }
+            });
+        }
+
+        void setSelectedMethod(boolean selected) {
+            this.isSelectedMethod = selected;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+
+            if (isSelectedMethod) {
+                g2.setColor(AppTheme.ACCENT_SUBTLE);
+                g2.fillRoundRect(0, 0, w, h, 6, 6);
+                g2.setColor(AppTheme.ACCENT);
+                g2.drawRoundRect(0, 0, w - 1, h - 1, 6, 6);
+            } else {
+                g2.setColor(AppTheme.CARD);
+                g2.fillRoundRect(0, 0, w, h, 6, 6);
+                g2.setColor(AppTheme.BORDER);
+                g2.drawRoundRect(0, 0, w - 1, h - 1, 6, 6);
+            }
+
+            g2.dispose();
+            super.paintComponent(g);
+        }
     }
 }

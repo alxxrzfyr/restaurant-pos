@@ -4,7 +4,6 @@ import com.restaurant.pos.AppContext;
 import com.restaurant.pos.model.BusinessSettings;
 import com.restaurant.pos.model.CheckoutResult;
 import com.restaurant.pos.model.Order;
-import com.restaurant.pos.model.OrderLineItem;
 import com.restaurant.pos.model.Payment;
 import com.restaurant.pos.service.ReceiptFormatter;
 import com.restaurant.pos.ui.theme.AppTheme;
@@ -21,6 +20,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -63,9 +63,14 @@ public final class ReceiptDialog extends JDialog {
         JPanel panel = new JPanel(new MigLayout("insets 20, wrap 1, fill", "[440!]"));
         panel.setBackground(AppTheme.CARD);
 
+        JLabel title = new JLabel("Order Receipt #" + order.orderNumber());
+        title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_PAGE_TITLE));
+        title.setForeground(AppTheme.TEXT_PRIMARY);
+        panel.add(title, "gapbottom 12");
+
         receiptArea.setEditable(false);
-        receiptArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        receiptArea.setBackground(new Color(250, 250, 250));
+        receiptArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        receiptArea.setBackground(Color.decode("#F8FAFC"));
         receiptArea.setForeground(AppTheme.TEXT_PRIMARY);
         receiptArea.setMargin(new Insets(16, 20, 16, 20));
         receiptArea.setText(buildReceiptText());
@@ -78,22 +83,13 @@ public final class ReceiptDialog extends JDialog {
         JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow]8[grow]8[grow]"));
         buttonPanel.setOpaque(false);
 
-        JButton printBtn = new JButton("Print");
-        printBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
-        printBtn.setIcon(Icons.printer(AppTheme.TEXT_PRIMARY, 16));
-        printBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        com.restaurant.pos.ui.components.SecondaryButton printBtn = new com.restaurant.pos.ui.components.SecondaryButton("Print", Icons.printer(AppTheme.TEXT_PRIMARY, 16));
         printBtn.addActionListener(e -> printReceipt());
 
-        JButton pdfBtn = new JButton("Export PDF");
-        pdfBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
-        pdfBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        com.restaurant.pos.ui.components.SecondaryButton pdfBtn = new com.restaurant.pos.ui.components.SecondaryButton("Save PDF", Icons.download(AppTheme.TEXT_PRIMARY, 16));
         pdfBtn.addActionListener(e -> exportPdf());
 
-        JButton closeBtn = new JButton("Close");
-        closeBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
-        closeBtn.setBackground(AppTheme.PRIMARY);
-        closeBtn.setForeground(Color.WHITE);
-        closeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        com.restaurant.pos.ui.components.PrimaryButton closeBtn = new com.restaurant.pos.ui.components.PrimaryButton("Done", Icons.check(Color.WHITE, 16));
         closeBtn.addActionListener(e -> dispose());
 
         buttonPanel.add(printBtn, "growx, h 40!");

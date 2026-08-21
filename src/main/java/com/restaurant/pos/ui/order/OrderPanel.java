@@ -11,6 +11,7 @@ import com.restaurant.pos.model.OrderType;
 import com.restaurant.pos.service.OrderTotals;
 import com.restaurant.pos.ui.format.MoneyFormatter;
 import com.restaurant.pos.ui.theme.AppTheme;
+import com.restaurant.pos.ui.theme.Icons;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BorderFactory;
@@ -23,8 +24,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -32,19 +35,22 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.RenderingHints;
+import java.awt.geom.RoundRectangle2D;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class OrderPanel extends JPanel {
 
-    private static final int TILE_WIDTH = 180;
-    private static final int TILE_HEIGHT = 175;
+    private static final int TILE_WIDTH = 190;
+    private static final int TILE_HEIGHT = 185;
     private static final int GRID_COLUMNS = 3;
-    private static final int CART_WIDTH = 340;
-    private static final int ROW_HEIGHT = 36;
-    private static final int BUTTON_HEIGHT = 48;
+    private static final int CART_WIDTH = 380;
+    private static final int ROW_HEIGHT = 38;
 
     private final AppContext context;
     private final long cashierId;
@@ -61,12 +67,12 @@ public final class OrderPanel extends JPanel {
     private final JTextField notesField = new JTextField(20);
 
     public OrderPanel(AppContext context, long cashierId, String cashierName) {
-        super(new BorderLayout(12, 0));
+        super(new BorderLayout(16, 0));
         this.context = context;
         this.cashierId = cashierId;
         this.cashierName = cashierName;
         setBackground(AppTheme.BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         cart.setOrderType(OrderType.DINE_IN);
 
@@ -98,9 +104,9 @@ public final class OrderPanel extends JPanel {
 
     private JScrollPane buildMenuGrid(List<MenuItem> items) {
         int rows = Math.max(1, (items.size() + GRID_COLUMNS - 1) / GRID_COLUMNS);
-        JPanel grid = new JPanel(new GridLayout(rows, GRID_COLUMNS, 12, 12));
+        JPanel grid = new JPanel(new GridLayout(rows, GRID_COLUMNS, 14, 14));
         grid.setBackground(AppTheme.BACKGROUND);
-        grid.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        grid.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
 
         for (MenuItem item : items) {
             grid.add(createMenuTile(item));
@@ -198,19 +204,28 @@ public final class OrderPanel extends JPanel {
     }
 
     private JPanel createMenuTile(MenuItem item) {
-
-        JPanel tile = new JPanel(new MigLayout("insets 6, fill, wrap 1", "[grow, fill]", "[grow 70, fill][grow 30, center]"));
+        JPanel tile = new JPanel(new MigLayout("insets 10, fill, wrap 1", "[grow, fill]", "[grow 68, fill][grow 32, center]")) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 8, 8));
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
         tile.setBackground(AppTheme.CARD);
         tile.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER, 1));
         tile.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         tile.setPreferredSize(new Dimension(TILE_WIDTH, TILE_HEIGHT));
-        tile.setMinimumSize(new Dimension(130, 150));
+        tile.setMinimumSize(new Dimension(140, 160));
 
         java.awt.image.BufferedImage img = loadImage(item.imagePath());
         ScaledImagePanel imgContainer = new ScaledImagePanel(img);
         tile.add(imgContainer, "grow");
 
-        JPanel infoPanel = new JPanel(new MigLayout("insets 2 4 4 4, wrap 1, fillx", "[center]", "[]2[]"));
+        JPanel infoPanel = new JPanel(new MigLayout("insets 4 4 2 4, wrap 1, fillx", "[center]", "[]2[]"));
         infoPanel.setOpaque(false);
 
         JLabel nameLabel = new JLabel(item.name());
@@ -219,8 +234,8 @@ public final class OrderPanel extends JPanel {
         nameLabel.setHorizontalAlignment(JLabel.CENTER);
 
         JLabel priceLabel = new JLabel(MoneyFormatter.format(item.price()));
-        priceLabel.setFont(AppTheme.bodyFont());
-        priceLabel.setForeground(AppTheme.TEXT_SECONDARY);
+        priceLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
+        priceLabel.setForeground(AppTheme.ACCENT);
         priceLabel.setHorizontalAlignment(JLabel.CENTER);
 
         infoPanel.add(nameLabel, "growx");
@@ -237,8 +252,8 @@ public final class OrderPanel extends JPanel {
 
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
-                tile.setBackground(AppTheme.BACKGROUND);
-                tile.setBorder(BorderFactory.createLineBorder(AppTheme.PRIMARY, 2));
+                tile.setBackground(AppTheme.BORDER_SUBTLE);
+                tile.setBorder(BorderFactory.createLineBorder(Color.decode("#94A3B8"), 1));
             }
 
             @Override
@@ -269,9 +284,9 @@ public final class OrderPanel extends JPanel {
             if (image == null) {
                 java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
                 g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new java.awt.Color(241, 245, 249));
+                g2.setColor(AppTheme.BORDER_SUBTLE);
                 g2.fillRoundRect(2, 2, panelW - 4, panelH - 4, 6, 6);
-                g2.setColor(AppTheme.TEXT_SECONDARY);
+                g2.setColor(AppTheme.TEXT_MUTED);
                 g2.setFont(new java.awt.Font(java.awt.Font.SANS_SERIF, java.awt.Font.PLAIN, 11));
                 java.awt.FontMetrics fm = g2.getFontMetrics();
                 String text = "No Image";
@@ -305,17 +320,18 @@ public final class OrderPanel extends JPanel {
     }
 
     private JPanel buildCartPanel() {
-        JPanel panel = new JPanel(new MigLayout("insets 16, wrap 1, fill", "[" + CART_WIDTH + "!]"));
+        JPanel panel = new JPanel(new MigLayout("insets 18, wrap 1, fill", "[" + CART_WIDTH + "!]"));
         panel.setBackground(AppTheme.CARD);
         panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppTheme.BORDER),
+                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
                 BorderFactory.createEmptyBorder(4, 4, 4, 4)));
 
         JLabel title = new JLabel("Current Order");
         title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_PAGE_TITLE));
-        panel.add(title, "gapbottom 12");
+        title.setForeground(AppTheme.TEXT_PRIMARY);
+        panel.add(title, "growx, gapbottom 14");
 
-        JPanel orderTypePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        JPanel orderTypePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
         orderTypePanel.setOpaque(false);
         ButtonGroup typeGroup = new ButtonGroup();
         typeGroup.add(dineInRadio);
@@ -328,47 +344,60 @@ public final class OrderPanel extends JPanel {
         takeOutRadio.addActionListener(e -> cart.setOrderType(OrderType.TAKE_OUT));
         orderTypePanel.add(dineInRadio);
         orderTypePanel.add(takeOutRadio);
-        panel.add(orderTypePanel, "gapbottom 8");
+        panel.add(orderTypePanel, "gapbottom 10");
 
         JPanel fieldsPanel = new JPanel(new MigLayout("insets 0, wrap 2", "[][grow, fill]"));
         fieldsPanel.setOpaque(false);
         JLabel tableLabel = new JLabel("Table #:");
         tableLabel.setFont(AppTheme.bodyFont());
+        tableLabel.setForeground(AppTheme.TEXT_SECONDARY);
         JLabel notesLabel = new JLabel("Notes:");
         notesLabel.setFont(AppTheme.bodyFont());
+        notesLabel.setForeground(AppTheme.TEXT_SECONDARY);
         tableNumberField.setFont(AppTheme.bodyFont());
         notesField.setFont(AppTheme.bodyFont());
         fieldsPanel.add(tableLabel);
-        fieldsPanel.add(tableNumberField, "h 32!");
+        fieldsPanel.add(tableNumberField, "h 36!");
         fieldsPanel.add(notesLabel);
-        fieldsPanel.add(notesField, "h 32!");
+        fieldsPanel.add(notesField, "h 36!");
         panel.add(fieldsPanel, "growx, gapbottom 12");
 
         JTable cartTable = new JTable(cartTableModel);
         cartTable.setRowHeight(ROW_HEIGHT);
-        cartTable.getTableHeader().setFont(AppTheme.bodyFont());
+        cartTable.getTableHeader().setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
         cartTable.setFont(AppTheme.bodyFont());
-        cartTable.getColumnModel().getColumn(0).setPreferredWidth(140);
+        cartTable.getColumnModel().getColumn(0).setPreferredWidth(170);
         cartTable.getColumnModel().getColumn(1).setPreferredWidth(50);
         cartTable.getColumnModel().getColumn(2).setPreferredWidth(100);
 
+        com.restaurant.pos.ui.components.StripedTableCellRenderer.apply(cartTable);
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < 3; i++) {
+            cartTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
         JScrollPane cartScroll = new JScrollPane(cartTable);
-        panel.add(cartScroll, "grow, push, gapbottom 8");
+        cartScroll.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        panel.add(cartScroll, "grow, push, gapbottom 12");
 
         JPanel qtyPanel = new JPanel(new MigLayout("insets 0", "[grow]8[grow]8[grow]"));
         qtyPanel.setOpaque(false);
-        JButton removeBtn = createTouchButton("-1", AppTheme.WARNING);
-        JButton addBtn = createTouchButton("+1", AppTheme.SUCCESS);
-        JButton deleteBtn = createTouchButton("Remove", AppTheme.DANGER);
+
+        JButton removeBtn = createActionBtn("- 1", null, false);
+        JButton addBtn = createActionBtn("+ 1", null, false);
+        JButton deleteBtn = createActionBtn("Remove", Icons.trash(AppTheme.DANGER, 14), true);
+
         removeBtn.addActionListener(e -> adjustSelectedLine(cartTable, -1));
         addBtn.addActionListener(e -> adjustSelectedLine(cartTable, 1));
         deleteBtn.addActionListener(e -> removeSelectedLine(cartTable));
-        qtyPanel.add(removeBtn, "growx, h " + BUTTON_HEIGHT + "!");
-        qtyPanel.add(addBtn, "growx, h " + BUTTON_HEIGHT + "!");
-        qtyPanel.add(deleteBtn, "growx, h " + BUTTON_HEIGHT + "!");
-        panel.add(qtyPanel, "growx, gapbottom 12");
 
-        JPanel totalsPanel = new JPanel(new MigLayout("insets 0, wrap 2", "[grow][right]"));
+        qtyPanel.add(removeBtn, "growx, h 36!");
+        qtyPanel.add(addBtn, "growx, h 36!");
+        qtyPanel.add(deleteBtn, "growx, h 36!");
+        panel.add(qtyPanel, "growx, gapbottom 14");
+
+        JPanel totalsPanel = new JPanel(new MigLayout("insets 10 0 10 0, wrap 2", "[grow][right]"));
         totalsPanel.setOpaque(false);
         totalsPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, AppTheme.BORDER));
         addTotalRow(totalsPanel, "Subtotal:", subtotalLabel, false);
@@ -376,13 +405,14 @@ public final class OrderPanel extends JPanel {
         addTotalRow(totalsPanel, "Total Due:", totalLabel, true);
         panel.add(totalsPanel, "growx, gapbottom 16");
 
-        JButton placeOrderButton = createTouchButton("Place Order", AppTheme.PRIMARY);
+        com.restaurant.pos.ui.components.PrimaryButton placeOrderButton = new com.restaurant.pos.ui.components.PrimaryButton("Place Order", Icons.check(Color.WHITE, 18));
         placeOrderButton.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
         placeOrderButton.addActionListener(e -> openPaymentDialog());
-        panel.add(placeOrderButton, "growx, h 56!");
+        panel.add(placeOrderButton, "growx, h 50!");
 
-        JButton clearBtn = createTouchButton("Clear Order", AppTheme.BORDER);
-        clearBtn.setForeground(AppTheme.TEXT_PRIMARY);
+        com.restaurant.pos.ui.components.SecondaryButton clearBtn = new com.restaurant.pos.ui.components.SecondaryButton("Clear Order");
+        clearBtn.setFont(AppTheme.bodyFont());
+        clearBtn.setForeground(AppTheme.TEXT_SECONDARY);
         clearBtn.addActionListener(e -> {
             cart.clear();
             cart.setOrderType(OrderType.DINE_IN);
@@ -391,30 +421,49 @@ public final class OrderPanel extends JPanel {
             notesField.setText("");
             refreshCart();
         });
-        panel.add(clearBtn, "growx, h " + BUTTON_HEIGHT + "!, gaptop 8");
+        panel.add(clearBtn, "growx, h 38!, gaptop 8");
 
         return panel;
+    }
+
+    private JButton createActionBtn(String text, javax.swing.Icon icon, boolean danger) {
+        JButton btn = new JButton(text);
+        if (icon != null) {
+            btn.setIcon(icon);
+            btn.setIconTextGap(6);
+        }
+        btn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+        if (danger) {
+            btn.setBackground(AppTheme.DANGER_BG);
+            btn.setForeground(AppTheme.DANGER);
+            btn.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(AppTheme.DANGER_BORDER, 1),
+                    BorderFactory.createEmptyBorder(6, 12, 6, 12)));
+        } else {
+            btn.setBackground(AppTheme.CARD);
+            btn.setForeground(AppTheme.TEXT_PRIMARY);
+            btn.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                    BorderFactory.createEmptyBorder(6, 12, 6, 12)));
+        }
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return btn;
     }
 
     private void addTotalRow(JPanel panel, String label, JLabel valueLabel, boolean bold) {
         JLabel caption = new JLabel(label);
         Font font = bold
                 ? AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER)
-                : AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER);
+                : AppTheme.bodyFont();
         caption.setFont(font);
-        valueLabel.setFont(font);
-        panel.add(caption, "gaptop 6");
-        panel.add(valueLabel, "gaptop 6");
-    }
+        caption.setForeground(bold ? AppTheme.TEXT_PRIMARY : AppTheme.TEXT_SECONDARY);
 
-    private JButton createTouchButton(String text, Color background) {
-        JButton button = new JButton(text);
-        button.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
-        button.setBackground(background);
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return button;
+        valueLabel.setFont(bold ? AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER) : AppTheme.bodyFont());
+        valueLabel.setForeground(bold ? AppTheme.ACCENT : AppTheme.TEXT_PRIMARY);
+
+        panel.add(caption, "gaptop 4");
+        panel.add(valueLabel, "gaptop 4");
     }
 
     private void adjustSelectedLine(JTable table, int delta) {

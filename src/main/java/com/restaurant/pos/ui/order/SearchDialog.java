@@ -3,6 +3,7 @@ package com.restaurant.pos.ui.order;
 import com.restaurant.pos.AppContext;
 import com.restaurant.pos.model.MenuItem;
 import com.restaurant.pos.model.Order;
+import com.restaurant.pos.ui.components.StripedTableCellRenderer;
 import com.restaurant.pos.ui.format.MoneyFormatter;
 import com.restaurant.pos.ui.theme.AppTheme;
 import com.restaurant.pos.ui.theme.Icons;
@@ -21,8 +22,10 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -84,7 +87,7 @@ public final class SearchDialog extends JDialog {
         JPanel headerPanel = new JPanel(new MigLayout("insets 0", "[]10[grow]"));
         headerPanel.setOpaque(false);
 
-        JLabel searchIcon = new JLabel(Icons.search(AppTheme.PRIMARY, 20));
+        JLabel searchIcon = new JLabel(Icons.search(AppTheme.ACCENT, 20));
         headerPanel.add(searchIcon);
 
         searchField.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_PAGE_TITLE));
@@ -102,17 +105,31 @@ public final class SearchDialog extends JDialog {
         tabbedPane.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
 
         menuTable.setFont(AppTheme.bodyFont());
-        menuTable.setRowHeight(28);
+        menuTable.setRowHeight(32);
         menuTable.getTableHeader().setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
         menuTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        StripedTableCellRenderer.apply(menuTable);
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < 5; i++) {
+            menuTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
         JScrollPane menuScroll = new JScrollPane(menuTable);
         menuScroll.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
-        tabbedPane.addTab("Menu Items", Icons.menu(AppTheme.TEXT_SECONDARY, 16), menuScroll);
+        tabbedPane.addTab("Menu Items", Icons.menu(AppTheme.TEXT_SECONDARY, 14), menuScroll);
 
         orderTable.setFont(AppTheme.bodyFont());
-        orderTable.setRowHeight(28);
+        orderTable.setRowHeight(32);
         orderTable.getTableHeader().setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
         orderTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        StripedTableCellRenderer.apply(orderTable);
+
+        for (int i = 0; i < 5; i++) {
+            orderTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
         orderTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -130,17 +147,24 @@ public final class SearchDialog extends JDialog {
 
         JButton reprintBtn = new JButton("View Receipt");
         reprintBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
-        reprintBtn.setIcon(Icons.fileText(AppTheme.TEXT_PRIMARY, 16));
+        reprintBtn.setIcon(Icons.fileText(AppTheme.TEXT_PRIMARY, 14));
+        reprintBtn.setIconTextGap(6);
+        reprintBtn.setBackground(AppTheme.CARD);
+        reprintBtn.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        reprintBtn.setFocusPainted(false);
         reprintBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         reprintBtn.addActionListener(e -> openSelectedOrderReceipt());
         orderPanel.add(reprintBtn, "align right, gapy 8");
 
-        tabbedPane.addTab("Orders", Icons.orders(AppTheme.TEXT_SECONDARY, 16), orderPanel);
+        tabbedPane.addTab("Orders", Icons.orders(AppTheme.TEXT_SECONDARY, 14), orderPanel);
 
         panel.add(tabbedPane, "grow, h 400!, gapbottom 12");
 
         JButton closeBtn = new JButton("Close (Esc)");
         closeBtn.setFont(AppTheme.bodyFont());
+        closeBtn.setBackground(AppTheme.CARD);
+        closeBtn.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        closeBtn.setFocusPainted(false);
         closeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         closeBtn.addActionListener(e -> dispose());
         panel.add(closeBtn, "align right, h 36!");
@@ -153,8 +177,7 @@ public final class SearchDialog extends JDialog {
             allMenuItems = context.menuService().findAll();
             allOrders = context.orderService().findOrderHistory(null, null);
             filterData();
-        } catch (Exception ex) {
-
+        } catch (Exception ignored) {
         }
     }
 
@@ -171,7 +194,7 @@ public final class SearchDialog extends JDialog {
                         item.name(),
                         item.categoryName(),
                         MoneyFormatter.format(item.price()),
-                        item.available() ? "Yes" : "86'd"
+                        item.available() ? "Available" : "86'd"
                 });
             }
         }
