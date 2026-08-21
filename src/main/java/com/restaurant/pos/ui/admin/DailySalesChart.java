@@ -10,14 +10,11 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,53 +32,24 @@ final class DailySalesChart extends JComponent {
 
     record DayTotal(String label, Money amount) {}
 
-    private static final int LEFT_PAD   = 70;
+    private static final int LEFT_PAD   = 65;
     private static final int RIGHT_PAD  = 20;
-    private static final int TOP_PAD    = 35;
-    private static final int BOTTOM_PAD = 40;
-    private static final int BAR_GAP    = 12;
+    private static final int TOP_PAD    = 24;
+    private static final int BOTTOM_PAD = 32;
+    private static final int MAX_BAR_WIDTH = 38;
     private static final int GRID_LINES = 4;
 
-    private static final Color BAR_FILL        = AppTheme.PRIMARY;
-    private static final Color BAR_FILL_HOVER  = new Color(29, 78, 216);
-    private static final Color BAR_FILL_LIGHT  = new Color(219, 234, 254);
-    private static final Color GRID_COLOR      = new Color(229, 231, 235, 180);
-    private static final Color AXIS_COLOR      = new Color(203, 213, 225);
-    private static final Color VALUE_COLOR     = Color.decode("#1E40AF");
+    private static final Color BAR_TOP_COLOR     = Color.decode("#3B82F6");
+    private static final Color BAR_BOTTOM_COLOR  = Color.decode("#1D4ED8");
+    private static final Color BAR_BG_TRACK      = Color.decode("#F1F5F9");
+    private static final Color GRID_COLOR        = Color.decode("#E2E8F0");
+    private static final Color AXIS_COLOR        = Color.decode("#CBD5E1");
 
     private List<DayTotal> data = List.of();
     private ChartMode currentMode = ChartMode.DAILY;
-    private int hoveredIndex = -1;
     private final List<Rectangle> barBounds = new ArrayList<>();
 
     public DailySalesChart() {
-        MouseAdapter mouseAdapter = new MouseAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                Point p = e.getPoint();
-                int oldHover = hoveredIndex;
-                hoveredIndex = -1;
-                for (int i = 0; i < barBounds.size(); i++) {
-                    if (barBounds.get(i).contains(p)) {
-                        hoveredIndex = i;
-                        break;
-                    }
-                }
-                if (oldHover != hoveredIndex) {
-                    repaint();
-                }
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                if (hoveredIndex != -1) {
-                    hoveredIndex = -1;
-                    repaint();
-                }
-            }
-        };
-        addMouseMotionListener(mouseAdapter);
-        addMouseListener(mouseAdapter);
     }
 
     void setData(List<DayTotal> data) {
@@ -91,18 +59,17 @@ final class DailySalesChart extends JComponent {
     void setData(ChartMode mode, List<DayTotal> data) {
         this.currentMode = mode != null ? mode : ChartMode.DAILY;
         this.data = data != null ? data : List.of();
-        this.hoveredIndex = -1;
         repaint();
     }
 
     @Override
     public Dimension getPreferredSize() {
-        return new Dimension(600, 320);
+        return new Dimension(500, 240);
     }
 
     @Override
     public Dimension getMinimumSize() {
-        return new Dimension(350, 220);
+        return new Dimension(280, 160);
     }
 
     @Override
@@ -126,7 +93,7 @@ final class DailySalesChart extends JComponent {
         int chartH      = chartBottom - chartTop;
         int chartW      = chartRight - chartLeft;
 
-        if (data.isEmpty()) {
+        if (data.isEmpty() || chartH <= 10 || chartW <= 10) {
             drawEmptyState(g2, width, height);
             g2.dispose();
             return;
@@ -134,7 +101,6 @@ final class DailySalesChart extends JComponent {
 
         long maxMinor = data.stream().mapToLong(d -> d.amount().toMinorUnits()).max().orElse(100);
         if (maxMinor == 0) maxMinor = 100;
-
         maxMinor = calculateNiceMax(maxMinor);
 
         g2.setStroke(new BasicStroke(1f));
@@ -144,12 +110,11 @@ final class DailySalesChart extends JComponent {
 
             if (i == 0) {
                 g2.setColor(AXIS_COLOR);
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.drawLine(chartLeft, y, chartRight, y);
                 g2.setStroke(new BasicStroke(1f));
+                g2.drawLine(chartLeft, y, chartRight, y);
             } else {
                 g2.setColor(GRID_COLOR);
-                float[] dash = {4f, 4f};
+                float[] dash = {3f, 3f};
                 g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, dash, 0f));
                 g2.drawLine(chartLeft, y, chartRight, y);
                 g2.setStroke(new BasicStroke(1f));
@@ -164,105 +129,53 @@ final class DailySalesChart extends JComponent {
         }
 
         int barCount   = data.size();
-        int gap        = data.size() > 10 ? Math.max(4, BAR_GAP / 2) : BAR_GAP;
-        int totalGapW  = (barCount - 1) * gap;
-        int barWidth   = Math.max(12, (chartW - totalGapW - 12) / barCount);
+        int slotWidth  = chartW / barCount;
+        int barWidth   = Math.min(MAX_BAR_WIDTH, Math.max(16, slotWidth - 16));
 
         for (int i = 0; i < barCount; i++) {
             DayTotal day = data.get(i);
-            int x       = chartLeft + 6 + i * (barWidth + gap);
-            double ratio = (double) day.amount().toMinorUnits() / maxMinor;
-            int barH    = (int) (chartH * ratio);
-            boolean isHovered = (i == hoveredIndex);
+            int slotCenterX = chartLeft + (i * slotWidth) + (slotWidth / 2);
+            int x = slotCenterX - (barWidth / 2);
 
-            Rectangle boundRect = new Rectangle(x, chartTop, barWidth, chartH + 20);
+            double ratio = (double) day.amount().toMinorUnits() / maxMinor;
+            int barH = (int) (chartH * ratio);
+
+            Rectangle boundRect = new Rectangle(x - 4, chartTop, barWidth + 8, chartH + 24);
             barBounds.add(boundRect);
 
+            g2.setColor(BAR_BG_TRACK);
+            g2.fillRoundRect(x, chartTop, barWidth, chartH, 6, 6);
+
             if (barH > 0) {
+                int solidH = Math.max(4, barH);
+                int barY = chartBottom - solidH;
 
-                g2.setColor(BAR_FILL_LIGHT);
-                g2.fillRect(x, chartBottom - barH, barWidth, barH);
+                GradientPaint gp = new GradientPaint(
+                        x, barY, BAR_TOP_COLOR,
+                        x, chartBottom, BAR_BOTTOM_COLOR);
+                g2.setPaint(gp);
+                g2.fillRoundRect(x, barY, barWidth, solidH, 6, 6);
 
-                g2.setColor(isHovered ? BAR_FILL_HOVER : BAR_FILL);
-                int solidH = Math.max(3, barH);
-                g2.fillRoundRect(x, chartBottom - solidH, barWidth, solidH, 4, 4);
-                if (solidH > 4) {
-                    g2.fillRect(x, chartBottom - 4, barWidth, 4);
-                }
-
-                if (!day.amount().isZero() && barWidth >= 24) {
-                    g2.setColor(isHovered ? AppTheme.PRIMARY : VALUE_COLOR);
+                if (!day.amount().isZero() && barY > chartTop + 16) {
+                    String valStr = formatCompactValue(day.amount().toMinorUnits());
                     g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
-                    String valStr = MoneyFormatter.format(day.amount());
                     FontMetrics fm = g2.getFontMetrics();
+                    g2.setColor(AppTheme.TEXT_SECONDARY);
                     int labelX = x + (barWidth - fm.stringWidth(valStr)) / 2;
-                    int labelY = chartBottom - barH - 6;
-                    if (labelY < chartTop + 12) labelY = chartTop + 12;
+                    int labelY = barY - 4;
                     g2.drawString(valStr, labelX, labelY);
                 }
             }
 
-            g2.setColor(isHovered ? AppTheme.TEXT_PRIMARY : AppTheme.TEXT_SECONDARY);
-            g2.setFont(new Font(Font.SANS_SERIF, isHovered ? Font.BOLD : Font.PLAIN, 10));
+            g2.setColor(AppTheme.TEXT_SECONDARY);
+            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
             FontMetrics fm = g2.getFontMetrics();
             String dayLabel = day.label();
             int labelX = x + (barWidth - fm.stringWidth(dayLabel)) / 2;
-            g2.drawString(dayLabel, labelX, chartBottom + 18);
-        }
-
-        paintLegend(g2, width);
-
-        if (hoveredIndex >= 0 && hoveredIndex < data.size()) {
-            drawTooltip(g2, hoveredIndex, barWidth, chartBottom);
+            g2.drawString(dayLabel, labelX, chartBottom + 16);
         }
 
         g2.dispose();
-    }
-
-    private void paintLegend(Graphics2D g2, int width) {
-        int boxSize = 10;
-        String legendText = currentMode.title() + " (₱)";
-        g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
-        FontMetrics fm = g2.getFontMetrics();
-        int totalW = boxSize + 6 + fm.stringWidth(legendText);
-        int startX = (width - totalW) / 2;
-
-        g2.setColor(BAR_FILL);
-        g2.fillRoundRect(startX, TOP_PAD - 18, boxSize, boxSize, 3, 3);
-        g2.setColor(AppTheme.TEXT_PRIMARY);
-        g2.drawString(legendText, startX + boxSize + 6, TOP_PAD - 9);
-    }
-
-    private void drawTooltip(Graphics2D g2, int index, int barWidth, int chartBottom) {
-        DayTotal day = data.get(index);
-        Rectangle b = barBounds.get(index);
-
-        String line1 = day.label();
-        String line2 = "Revenue: " + MoneyFormatter.format(day.amount());
-
-        g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
-        FontMetrics fm = g2.getFontMetrics();
-        int tooltipW = Math.max(fm.stringWidth(line1), fm.stringWidth(line2)) + 20;
-        int tooltipH = 44;
-
-        int tooltipX = b.x + (barWidth - tooltipW) / 2;
-        if (tooltipX < LEFT_PAD) tooltipX = LEFT_PAD;
-        if (tooltipX + tooltipW > getWidth() - RIGHT_PAD) tooltipX = getWidth() - RIGHT_PAD - tooltipW;
-        int tooltipY = TOP_PAD + 10;
-
-        g2.setColor(new Color(0, 0, 0, 30));
-        g2.fill(new RoundRectangle2D.Float(tooltipX + 2, tooltipY + 2, tooltipW, tooltipH, 8, 8));
-
-        g2.setColor(new Color(17, 24, 39, 230));
-        g2.fill(new RoundRectangle2D.Float(tooltipX, tooltipY, tooltipW, tooltipH, 8, 8));
-
-        g2.setColor(Color.WHITE);
-        g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
-        g2.drawString(line1, tooltipX + 10, tooltipY + 16);
-
-        g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
-        g2.setColor(new Color(147, 197, 253));
-        g2.drawString(line2, tooltipX + 10, tooltipY + 32);
     }
 
     private static void drawEmptyState(Graphics2D g2, int width, int height) {
@@ -284,6 +197,14 @@ final class DailySalesChart extends JComponent {
         long pesos = minorUnits / 100;
         if (pesos >= 1_000_000) return String.format("₱%.1fM", pesos / 1_000_000.0);
         if (pesos >= 1_000)     return "₱" + (pesos / 1_000) + "k";
+        return "₱" + pesos;
+    }
+
+    private static String formatCompactValue(long minorUnits) {
+        if (minorUnits == 0) return "₱0";
+        long pesos = minorUnits / 100;
+        if (pesos >= 1_000_000) return String.format("₱%.1fM", pesos / 1_000_000.0);
+        if (pesos >= 1_000)     return String.format("₱%.1fk", pesos / 1_000.0);
         return "₱" + pesos;
     }
 }
