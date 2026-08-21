@@ -29,16 +29,9 @@ jobs:
       - name: Build Fat JAR with Maven
         run: mvn clean package -DskipTests
 
-      - name: Install Inno Setup
-        run: choco install innosetup --no-progress
-
-      - name: Compile Inno Setup Installer (.exe)
+      - name: Package with jpackage (Windows Installer, self-contained JRE)
         run: |
           mkdir dist -ErrorAction SilentlyContinue
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\RestaurantPOS-InnoSetup.iss
-
-      - name: Package with jpackage (Windows App Image & MSI/EXE)
-        run: |
           jpackage `
             --input target `
             --name "RestaurantPOS" `
@@ -47,7 +40,10 @@ jobs:
             --type exe `
             --dest dist `
             --app-version "1.0.0" `
-            --vendor "Restaurant POS"
+            --vendor "Restaurant POS" `
+            --win-menu `
+            --win-shortcut `
+            --win-dir-chooser
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4

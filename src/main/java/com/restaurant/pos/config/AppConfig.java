@@ -64,7 +64,7 @@ public final class AppConfig {
     }
 
     public String appVersion() {
-        return resolveString("app.version", "APP_VERSION", "2.0.0");
+        return resolveString("app.version", "APP_VERSION", "1.0.0");
     }
 
     public String appTimezone() {

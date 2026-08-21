@@ -33,7 +33,7 @@
 | **Persistence** | Embedded SQLite with [Flyway](https://flywaydb.org/) migrations and [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pooling |
 | **Security** | BCrypt password hashing and audit logging |
 | **Build Tool** | Apache Maven |
-| **Packaging** | JPackage native bundle & Inno Setup installer |
+| **Packaging** | JPackage self-contained native installers (bundled JRE, no prerequisites) |
 
 ---
 
@@ -139,8 +139,7 @@ The system automatically initializes an embedded SQLite database (`restaurant-po
 
 ```text
 restaurant-pos/
-├── installer/            # Native packaging and Inno Setup installer scripts
-│   ├── RestaurantPOS-InnoSetup.iss
+├── installer/            # Native packaging scripts (jpackage)
 │   └── build-package.sh
 ├── src/
 │   ├── main/java/com/restaurant/pos/
