@@ -1,0 +1,66 @@
+name: Build and Release Installers
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-exe:
+    name: Build Windows .exe Installer & Executable
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build Fat JAR with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress
+
+      - name: Compile Inno Setup Installer (.exe)
+        run: |
+          mkdir dist -ErrorAction SilentlyContinue
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\RestaurantPOS-InnoSetup.iss
+
+      - name: Package with jpackage (Windows App Image & MSI/EXE)
+        run: |
+          jpackage `
+            --input target `
+            --name "RestaurantPOS" `
+            --main-jar "app.jar" `
+            --main-class "com.restaurant.pos.Main" `
+            --type exe `
+            --dest dist `
+            --app-version "1.0.0" `
+            --vendor "Restaurant POS"
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/*
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.exe
+            target/app.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
