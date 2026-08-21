@@ -4,23 +4,30 @@ import com.restaurant.pos.AppContext;
 import com.restaurant.pos.model.Role;
 import com.restaurant.pos.model.User;
 import com.restaurant.pos.ui.theme.AppTheme;
+import com.restaurant.pos.ui.theme.Icons;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.Font;
 import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -29,7 +36,7 @@ import java.util.List;
 
 public final class UserManagementPanel extends JPanel {
 
-    private static final int ROW_HEIGHT = 36;
+    private static final int ROW_HEIGHT = 38;
     private static final DateTimeFormatter LOCK_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
@@ -38,14 +45,15 @@ public final class UserManagementPanel extends JPanel {
 
     private final UserTableModel tableModel = new UserTableModel();
     private final JTable userTable = new JTable(tableModel);
+    private final JLabel userCountLabel = new JLabel();
 
     public UserManagementPanel(AppContext context, User currentUser) {
-        super(new BorderLayout(0, 12));
+        super(new BorderLayout(0, 16));
         this.context = context;
         this.currentUser = currentUser;
 
         setBackground(AppTheme.BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         add(buildHeaderBar(), BorderLayout.NORTH);
         add(buildTablePane(), BorderLayout.CENTER);
@@ -57,56 +65,119 @@ public final class UserManagementPanel extends JPanel {
         JPanel header = new JPanel(new MigLayout("insets 0, fillx", "[grow][]"));
         header.setOpaque(false);
 
-        JLabel title = new JLabel("User Accounts & Employee Roles");
+        JPanel titleBox = new JPanel(new MigLayout("insets 0, wrap 1, gapy 2"));
+        titleBox.setOpaque(false);
+
+        JLabel title = new JLabel("User Accounts & Employee Access");
         title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_PAGE_TITLE));
         title.setForeground(AppTheme.TEXT_PRIMARY);
-        header.add(title);
 
-        JPanel toolbar = new JPanel(new MigLayout("insets 0", "[][][][][]"));
-        toolbar.setOpaque(false);
+        JLabel subtitle = new JLabel("Manage cashier & administrator logins, security locks, and role access permissions");
+        subtitle.setFont(AppTheme.captionFont());
+        subtitle.setForeground(AppTheme.TEXT_SECONDARY);
 
-        JButton addUserBtn = createButton("Add User", false);
+        titleBox.add(title);
+        titleBox.add(subtitle);
+        header.add(titleBox, "growx");
+
+        JButton addUserBtn = createButton("Add User", Icons.userPlus(Color.WHITE, 14), true);
         addUserBtn.addActionListener(e -> onAddUser());
+        header.add(addUserBtn, "h 38!");
 
-        JButton editUserBtn = createButton("Edit User", false);
-        editUserBtn.addActionListener(e -> onEditUser());
-
-        JButton toggleActiveBtn = createButton("Enable / Disable", false);
-        toggleActiveBtn.addActionListener(e -> onToggleActive());
-
-        JButton resetPassBtn = createButton("Reset Password", false);
-        resetPassBtn.addActionListener(e -> onResetPassword());
-
-        JButton changeRoleBtn = createButton("Change Role", false);
-        changeRoleBtn.addActionListener(e -> onChangeRole());
-
-        toolbar.add(addUserBtn, "h 38!");
-        toolbar.add(editUserBtn, "h 38!");
-        toolbar.add(toggleActiveBtn, "h 38!");
-        toolbar.add(resetPassBtn, "h 38!");
-        toolbar.add(changeRoleBtn, "h 38!");
-
-        header.add(toolbar);
         return header;
     }
 
-    private JButton createButton(String text, boolean danger) {
+    private JButton createButton(String text, javax.swing.Icon icon, boolean primary) {
         JButton button = new JButton(text);
+        if (icon != null) {
+            button.setIcon(icon);
+            button.setIconTextGap(8);
+        }
         button.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        if (danger) {
-            button.setBackground(AppTheme.DANGER);
+        button.setFocusPainted(false);
+
+        if (primary) {
+            button.setBackground(AppTheme.PRIMARY);
             button.setForeground(Color.WHITE);
+            button.setBorder(BorderFactory.createEmptyBorder(8, 18, 8, 18));
+        } else {
+            button.setBackground(AppTheme.CARD);
+            button.setForeground(AppTheme.TEXT_PRIMARY);
+            button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                    BorderFactory.createEmptyBorder(7, 16, 7, 16)));
         }
         return button;
     }
 
-    private JScrollPane buildTablePane() {
+    private JPanel buildTablePane() {
+        JPanel container = new JPanel(new BorderLayout(0, 12));
+        container.setBackground(AppTheme.CARD);
+        container.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER),
+                BorderFactory.createEmptyBorder(16, 18, 16, 18)));
+
+        JPanel tableHeaderBar = new JPanel(new MigLayout("insets 0, fillx", "[grow][]"));
+        tableHeaderBar.setOpaque(false);
+
+        JPanel countBox = new JPanel(new MigLayout("insets 0, wrap 1, gapy 2"));
+        countBox.setOpaque(false);
+        JLabel sectionTitle = new JLabel("System Users");
+        sectionTitle.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
+        sectionTitle.setForeground(AppTheme.TEXT_PRIMARY);
+        userCountLabel.setFont(AppTheme.captionFont());
+        userCountLabel.setForeground(AppTheme.TEXT_MUTED);
+        countBox.add(sectionTitle);
+        countBox.add(userCountLabel);
+        tableHeaderBar.add(countBox, "growx");
+
+        JPanel toolbar = new JPanel(new MigLayout("insets 0", "[]8[]8[]8[]"));
+        toolbar.setOpaque(false);
+
+        JButton editUserBtn = createButton("Edit User", Icons.edit(AppTheme.TEXT_PRIMARY, 14), false);
+        editUserBtn.addActionListener(e -> onEditUser());
+
+        JButton changeRoleBtn = createButton("Change Role", Icons.shield(AppTheme.TEXT_PRIMARY, 14), false);
+        changeRoleBtn.addActionListener(e -> onChangeRole());
+
+        JButton resetPassBtn = createButton("Reset Password", Icons.key(AppTheme.TEXT_PRIMARY, 14), false);
+        resetPassBtn.addActionListener(e -> onResetPassword());
+
+        JButton toggleActiveBtn = createButton("Enable / Disable", Icons.toggleOn(AppTheme.TEXT_PRIMARY, 14), false);
+        toggleActiveBtn.addActionListener(e -> onToggleActive());
+
+        toolbar.add(editUserBtn, "h 36!");
+        toolbar.add(changeRoleBtn, "h 36!");
+        toolbar.add(resetPassBtn, "h 36!");
+        toolbar.add(toggleActiveBtn, "h 36!");
+
+        tableHeaderBar.add(toolbar, "align right");
+        container.add(tableHeaderBar, BorderLayout.NORTH);
+
         userTable.setRowHeight(ROW_HEIGHT);
         userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         userTable.getTableHeader().setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
         userTable.setFont(AppTheme.bodyFont());
         com.restaurant.pos.ui.components.StripedTableCellRenderer.apply(userTable);
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < 8; i++) {
+            if (i != 5) {
+                userTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+            }
+        }
+        userTable.getColumnModel().getColumn(5).setCellRenderer(new RoundedPillUserStatusRenderer());
+
+        userTable.getColumnModel().getColumn(0).setPreferredWidth(45);
+        userTable.getColumnModel().getColumn(1).setPreferredWidth(140);
+        userTable.getColumnModel().getColumn(2).setPreferredWidth(180);
+        userTable.getColumnModel().getColumn(3).setPreferredWidth(120);
+        userTable.getColumnModel().getColumn(4).setPreferredWidth(70);
+        userTable.getColumnModel().getColumn(5).setPreferredWidth(110);
+        userTable.getColumnModel().getColumn(6).setPreferredWidth(110);
+        userTable.getColumnModel().getColumn(7).setPreferredWidth(140);
 
         userTable.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
@@ -117,12 +188,15 @@ public final class UserManagementPanel extends JPanel {
             }
         });
 
-        return new JScrollPane(userTable);
+        container.add(new JScrollPane(userTable), BorderLayout.CENTER);
+        return container;
     }
 
     private void loadData() {
         List<User> users = context.userService().findAll();
         tableModel.setUsers(users);
+        long activeCount = users.stream().filter(User::active).count();
+        userCountLabel.setText(users.size() + " total users (" + activeCount + " active)");
     }
 
     private Frame getParentFrame() {
@@ -256,6 +330,58 @@ public final class UserManagementPanel extends JPanel {
                 case 7 -> u.isCurrentlyLocked(now) ? LOCK_FORMAT.format(u.lockedUntil()) : "-";
                 default -> "";
             };
+        }
+    }
+
+    private static final class RoundedPillUserStatusRenderer extends DefaultTableCellRenderer {
+        private String currentStatus = "";
+        private boolean isRowSelected = false;
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus,
+                                                       int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            this.currentStatus = value != null ? value.toString() : "";
+            this.isRowSelected = isSelected;
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
+            setOpaque(false);
+
+            if ("Active".equalsIgnoreCase(currentStatus)) {
+                setForeground(AppTheme.SUCCESS);
+            } else {
+                setForeground(AppTheme.DANGER);
+            }
+            return this;
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+            int pillW = 74;
+            int pillH = 22;
+            int x = (w - pillW) / 2;
+            int y = (h - pillH) / 2;
+
+            if ("Active".equalsIgnoreCase(currentStatus)) {
+                g2.setColor(isRowSelected ? Color.decode("#BBF7D0") : AppTheme.SUCCESS_BG);
+                g2.fillRoundRect(x, y, pillW, pillH, 12, 12);
+                g2.setColor(AppTheme.SUCCESS_BORDER);
+                g2.drawRoundRect(x, y, pillW, pillH, 12, 12);
+            } else {
+                g2.setColor(isRowSelected ? Color.decode("#FECACA") : AppTheme.DANGER_BG);
+                g2.fillRoundRect(x, y, pillW, pillH, 12, 12);
+                g2.setColor(AppTheme.DANGER_BORDER);
+                g2.drawRoundRect(x, y, pillW, pillH, 12, 12);
+            }
+
+            g2.dispose();
+            super.paintComponent(g);
         }
     }
 }

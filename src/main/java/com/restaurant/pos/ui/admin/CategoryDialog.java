@@ -4,13 +4,13 @@ import com.restaurant.pos.AppContext;
 import com.restaurant.pos.model.Category;
 import com.restaurant.pos.model.User;
 import com.restaurant.pos.ui.theme.AppTheme;
+import com.restaurant.pos.ui.theme.Icons;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
@@ -53,16 +53,17 @@ final class CategoryDialog extends JDialog {
     }
 
     private JPanel buildContent() {
-        JPanel panel = new JPanel(new MigLayout("fillx, insets 20, wrap 2", "[right][grow,fill]"));
-        panel.setBackground(AppTheme.BACKGROUND);
+        JPanel panel = new JPanel(new MigLayout("fillx, insets 24, wrap 2", "[right, 120!][grow,fill]"));
+        panel.setBackground(AppTheme.CARD);
 
         JLabel titleLabel = new JLabel(categoryToEdit == null ? "New Category" : "Edit Category");
         titleLabel.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
         titleLabel.setForeground(AppTheme.TEXT_PRIMARY);
-        panel.add(titleLabel, "span 2, gapbottom 15");
+        panel.add(titleLabel, "span 2, gapbottom 12");
 
         JLabel nameLabel = new JLabel("Category Name:");
         nameLabel.setFont(AppTheme.bodyFont());
+        nameLabel.setForeground(AppTheme.TEXT_SECONDARY);
         panel.add(nameLabel);
 
         nameField.setFont(AppTheme.bodyFont());
@@ -70,6 +71,7 @@ final class CategoryDialog extends JDialog {
 
         JLabel orderLabel = new JLabel("Display Order:");
         orderLabel.setFont(AppTheme.bodyFont());
+        orderLabel.setForeground(AppTheme.TEXT_SECONDARY);
         panel.add(orderLabel);
 
         displayOrderSpinner.setFont(AppTheme.bodyFont());
@@ -77,24 +79,30 @@ final class CategoryDialog extends JDialog {
 
         errorLabel.setFont(AppTheme.captionFont());
         errorLabel.setForeground(AppTheme.DANGER);
-        panel.add(errorLabel, "span 2, gaptop 5, gapbottom 10");
+        panel.add(errorLabel, "span 2, gaptop 4, gapbottom 10");
 
         JButton saveButton = new JButton("Save Category");
         saveButton.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+        saveButton.setIcon(Icons.check(Color.WHITE, 16));
+        saveButton.setIconTextGap(6);
         saveButton.setBackground(AppTheme.PRIMARY);
         saveButton.setForeground(Color.WHITE);
+        saveButton.setFocusPainted(false);
         saveButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         saveButton.addActionListener(e -> onSave());
 
         JButton cancelButton = new JButton("Cancel");
         cancelButton.setFont(AppTheme.bodyFont());
+        cancelButton.setBackground(AppTheme.CARD);
+        cancelButton.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        cancelButton.setFocusPainted(false);
         cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cancelButton.addActionListener(e -> dispose());
 
-        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow,fill][grow,fill]"));
+        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow,fill]10[grow,fill]"));
         buttonPanel.setOpaque(false);
-        buttonPanel.add(saveButton, "h 40!");
         buttonPanel.add(cancelButton, "h 40!");
+        buttonPanel.add(saveButton, "h 40!");
 
         panel.add(buttonPanel, "span 2, gaptop 10");
         return panel;

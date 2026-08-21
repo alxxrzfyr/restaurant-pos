@@ -10,6 +10,7 @@ import com.restaurant.pos.ui.theme.Icons;
 import com.restaurant.pos.util.ImageStorage;
 import net.miginfocom.swing.MigLayout;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
@@ -40,7 +41,7 @@ final class UserDialog extends JDialog {
     private final JPasswordField adminPasswordField = new JPasswordField(20);
 
     private final JLabel photoPathLabel = new JLabel("No photo selected");
-    private final JButton removePhotoBtn = new JButton("Remove Photo");
+    private final JButton removePhotoBtn = new JButton("Remove");
     private final JLabel errorLabel = new JLabel(" ");
 
     private String selectedPhotoPath = null;
@@ -78,13 +79,13 @@ final class UserDialog extends JDialog {
     }
 
     private JPanel buildContent() {
-        JPanel panel = new JPanel(new MigLayout("fillx, insets 20, wrap 2", "[right][grow,fill]"));
-        panel.setBackground(AppTheme.BACKGROUND);
+        JPanel panel = new JPanel(new MigLayout("fillx, insets 24, wrap 2", "[right, 140!][grow,fill]"));
+        panel.setBackground(AppTheme.CARD);
 
         JLabel titleLabel = new JLabel(targetUser == null ? "New User Account" : "Edit User Account");
         titleLabel.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
         titleLabel.setForeground(AppTheme.TEXT_PRIMARY);
-        panel.add(titleLabel, "span 2, gapbottom 15");
+        panel.add(titleLabel, "span 2, gapbottom 12");
 
         panel.add(createLabel("Username:"));
         usernameField.setFont(AppTheme.bodyFont());
@@ -105,8 +106,8 @@ final class UserDialog extends JDialog {
         if (targetUser != null) {
             JLabel pwdNote = new JLabel("Leave password fields blank to keep current password.");
             pwdNote.setFont(AppTheme.captionFont());
-            pwdNote.setForeground(AppTheme.TEXT_SECONDARY);
-            panel.add(pwdNote, "span 2, gapleft 140, gapbottom 5");
+            pwdNote.setForeground(AppTheme.TEXT_MUTED);
+            panel.add(pwdNote, "span 2, gapleft 140, gapbottom 4");
         }
 
         panel.add(createLabel("Role:"));
@@ -119,14 +120,20 @@ final class UserDialog extends JDialog {
 
         JButton uploadBtn = new JButton("Choose Photo");
         uploadBtn.setFont(AppTheme.bodyFont());
-        uploadBtn.setIcon(Icons.camera(AppTheme.TEXT_PRIMARY, 16));
+        uploadBtn.setIcon(Icons.camera(AppTheme.TEXT_PRIMARY, 14));
+        uploadBtn.setIconTextGap(6);
+        uploadBtn.setBackground(AppTheme.CARD);
+        uploadBtn.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        uploadBtn.setFocusPainted(false);
         uploadBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         uploadBtn.addActionListener(e -> onChoosePhoto());
         photoBox.add(uploadBtn, "h 36!");
 
         removePhotoBtn.setFont(AppTheme.bodyFont());
-        removePhotoBtn.setIcon(Icons.trash(AppTheme.DANGER, 16));
+        removePhotoBtn.setBackground(AppTheme.DANGER_BG);
         removePhotoBtn.setForeground(AppTheme.DANGER);
+        removePhotoBtn.setBorder(BorderFactory.createLineBorder(AppTheme.DANGER_BORDER));
+        removePhotoBtn.setFocusPainted(false);
         removePhotoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         removePhotoBtn.setVisible(selectedPhotoPath != null);
         removePhotoBtn.addActionListener(e -> {
@@ -134,7 +141,7 @@ final class UserDialog extends JDialog {
             photoPathLabel.setText("No photo selected");
             removePhotoBtn.setVisible(false);
         });
-        photoBox.add(removePhotoBtn, "h 36!, gapleft 5");
+        photoBox.add(removePhotoBtn, "h 36!, gapleft 6");
 
         photoPathLabel.setFont(AppTheme.captionFont());
         photoPathLabel.setForeground(AppTheme.TEXT_SECONDARY);
@@ -142,37 +149,43 @@ final class UserDialog extends JDialog {
         panel.add(photoBox);
 
         JLabel adminPassLabel = createLabel("Admin Password:");
-        adminPassLabel.setForeground(AppTheme.PRIMARY);
-        panel.add(adminPassLabel, "gaptop 10");
+        adminPassLabel.setForeground(AppTheme.ACCENT);
+        panel.add(adminPassLabel, "gaptop 8");
 
         adminPasswordField.setFont(AppTheme.bodyFont());
-        panel.add(adminPasswordField, "h 36!, gaptop 10");
+        panel.add(adminPasswordField, "h 36!, gaptop 8");
 
         JLabel adminNote = new JLabel("Enter your admin password to authorize changes.");
         adminNote.setFont(AppTheme.captionFont());
-        adminNote.setForeground(AppTheme.TEXT_SECONDARY);
-        panel.add(adminNote, "span 2, gapleft 140, gapbottom 5");
+        adminNote.setForeground(AppTheme.TEXT_MUTED);
+        panel.add(adminNote, "span 2, gapleft 140, gapbottom 4");
 
         errorLabel.setFont(AppTheme.captionFont());
         errorLabel.setForeground(AppTheme.DANGER);
-        panel.add(errorLabel, "span 2, gaptop 5, gapbottom 10");
+        panel.add(errorLabel, "span 2, gaptop 4, gapbottom 10");
 
         JButton saveButton = new JButton(targetUser == null ? "Create User" : "Save Changes");
         saveButton.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+        saveButton.setIcon(Icons.check(Color.WHITE, 16));
+        saveButton.setIconTextGap(6);
         saveButton.setBackground(AppTheme.PRIMARY);
         saveButton.setForeground(Color.WHITE);
+        saveButton.setFocusPainted(false);
         saveButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         saveButton.addActionListener(e -> onSave());
 
         JButton cancelButton = new JButton("Cancel");
         cancelButton.setFont(AppTheme.bodyFont());
+        cancelButton.setBackground(AppTheme.CARD);
+        cancelButton.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        cancelButton.setFocusPainted(false);
         cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cancelButton.addActionListener(e -> dispose());
 
-        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow,fill][grow,fill]"));
+        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow,fill]10[grow,fill]"));
         buttonPanel.setOpaque(false);
-        buttonPanel.add(saveButton, "h 40!");
         buttonPanel.add(cancelButton, "h 40!");
+        buttonPanel.add(saveButton, "h 40!");
 
         panel.add(buttonPanel, "span 2, gaptop 10");
 
@@ -184,6 +197,7 @@ final class UserDialog extends JDialog {
     private JLabel createLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(AppTheme.bodyFont());
+        label.setForeground(AppTheme.TEXT_SECONDARY);
         return label;
     }
 

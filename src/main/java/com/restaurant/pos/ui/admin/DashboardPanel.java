@@ -30,6 +30,9 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -42,13 +45,9 @@ public final class DashboardPanel extends JPanel {
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern("hh:mm:ss a").withZone(ZoneId.systemDefault());
     private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy").withZone(ZoneId.systemDefault());
+            DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy").withZone(ZoneId.systemDefault());
     private static final DateTimeFormatter ORDER_TIME_FORMAT =
             DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault());
-
-    private static final Color PURPLE = Color.decode("#8B5CF6");
-    private static final Color TEAL   = Color.decode("#0D9488");
-    private static final Color AMBER  = Color.decode("#D97706");
 
     private final AppContext context;
     private final User currentUser;
@@ -58,12 +57,12 @@ public final class DashboardPanel extends JPanel {
     private final JLabel lastUpdatedLabel = new JLabel("Updated: Just now");
     private final Timer clockTimer;
 
-    private final KpiCard salesCard        = new KpiCard("Today's Sales",   AppTheme.PRIMARY, Icons.reports(AppTheme.TEXT_SECONDARY, 18));
-    private final KpiCard revenueCard      = new KpiCard("Net Revenue",      AppTheme.SUCCESS, Icons.fileText(AppTheme.TEXT_SECONDARY, 18));
-    private final KpiCard transactionsCard  = new KpiCard("Transactions",    AppTheme.WARNING, Icons.orders(AppTheme.TEXT_SECONDARY, 18));
-    private final KpiCard itemsSoldCard    = new KpiCard("Items Sold",       PURPLE,           Icons.menu(AppTheme.TEXT_SECONDARY, 18));
-    private final KpiCard aovCard          = new KpiCard("Avg Order Value", TEAL,             Icons.user(AppTheme.TEXT_SECONDARY, 18));
-    private final KpiCard topItemCard      = new KpiCard("Top Selling Item", AMBER,            Icons.checkCircle(AppTheme.TEXT_SECONDARY, 18));
+    private final KpiCard salesCard        = new KpiCard("Today's Sales",   null, Icons.reports(AppTheme.ACCENT, 15));
+    private final KpiCard revenueCard      = new KpiCard("Net Revenue",      null, Icons.trendingUp(AppTheme.SUCCESS, 15));
+    private final KpiCard transactionsCard  = new KpiCard("Transactions",    null, Icons.orders(AppTheme.TEXT_SECONDARY, 15));
+    private final KpiCard itemsSoldCard    = new KpiCard("Items Sold",       null, Icons.shoppingBag(AppTheme.TEXT_SECONDARY, 15));
+    private final KpiCard aovCard          = new KpiCard("Avg Order Value", null, Icons.percent(AppTheme.TEXT_SECONDARY, 15));
+    private final KpiCard topItemCard      = new KpiCard("Top Selling Item", null, Icons.star(AppTheme.TEXT_SECONDARY, 15));
 
     private final DailySalesChart salesChart = new DailySalesChart();
     private DailySalesChart.ChartMode activeChartMode = DailySalesChart.ChartMode.DAILY;
@@ -72,7 +71,6 @@ public final class DashboardPanel extends JPanel {
     private final JButton btnMonthly = new JButton("Monthly");
 
     private final RecentOrdersTableModel recentOrdersModel = new RecentOrdersTableModel();
-
     private final TopSellingTableModel topSellingModel = new TopSellingTableModel();
 
     private final JLabel summaryVatVal       = new JLabel("₱0.00");
@@ -82,16 +80,16 @@ public final class DashboardPanel extends JPanel {
     private final JLabel summaryChannelVal   = new JLabel("0 Dine-In / 0 Take-Out");
 
     public DashboardPanel(AppContext context, User currentUser) {
-        super(new MigLayout("insets 16 16 16 16, fill, hidemode 3", "[grow]", "[][][grow 55, fill][grow 45, fill]"));
+        super(new MigLayout("insets 16 20 16 20, fill, hidemode 3", "[grow, fill]", "[][][grow 56, fill][grow 44, fill]"));
         this.context = context;
         this.currentUser = currentUser;
 
         setBackground(AppTheme.BACKGROUND);
 
         add(buildHeader(), "growx, wrap, gapbottom 12");
-        add(buildKpiRow(), "growx, wrap, gapbottom 12");
-        add(buildRow2(), "grow, push, wrap, gapbottom 12, h 260::");
-        add(buildRow3(), "grow, push, h 220::");
+        add(buildKpiGrid(), "growx, wrap, gapbottom 14");
+        add(buildRow2(), "grow, push, wrap, gapbottom 14");
+        add(buildRow3(), "grow, push");
 
         clockTimer = new Timer(1000, e -> updateClock());
         clockTimer.start();
@@ -108,14 +106,14 @@ public final class DashboardPanel extends JPanel {
         JPanel header = new JPanel(new MigLayout("insets 0, fillx", "[grow][]"));
         header.setOpaque(false);
 
-        JPanel titleBox = new JPanel(new MigLayout("insets 0, wrap 1"));
+        JPanel titleBox = new JPanel(new MigLayout("insets 0, wrap 1, gapy 2"));
         titleBox.setOpaque(false);
 
         JLabel title = new JLabel("Executive Dashboard");
         title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_DASHBOARD_TITLE));
         title.setForeground(AppTheme.TEXT_PRIMARY);
 
-        JLabel subtitle = new JLabel("Real-time operational summary & today's sales metrics");
+        JLabel subtitle = new JLabel("Real-time operational summary and performance metrics");
         subtitle.setFont(AppTheme.captionFont());
         subtitle.setForeground(AppTheme.TEXT_SECONDARY);
 
@@ -123,52 +121,54 @@ public final class DashboardPanel extends JPanel {
         titleBox.add(subtitle);
         header.add(titleBox, "growx");
 
-        JPanel rightBox = new JPanel(new MigLayout("insets 0, aligny center", "[]16[]16[]12[]"));
+        JPanel rightBox = new JPanel(new MigLayout("insets 0, aligny center", "[]18[]18[]14[]"));
         rightBox.setOpaque(false);
 
         dateLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
         dateLabel.setForeground(AppTheme.TEXT_PRIMARY);
 
         timeLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
-        timeLabel.setForeground(AppTheme.PRIMARY);
+        timeLabel.setForeground(AppTheme.ACCENT);
 
         lastUpdatedLabel.setFont(AppTheme.captionFont());
-        lastUpdatedLabel.setForeground(AppTheme.TEXT_SECONDARY);
+        lastUpdatedLabel.setForeground(AppTheme.TEXT_MUTED);
 
         JButton refreshBtn = new JButton("Refresh");
         refreshBtn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
         refreshBtn.setIcon(Icons.refresh(Color.WHITE, 14));
+        refreshBtn.setIconTextGap(8);
         refreshBtn.setBackground(AppTheme.PRIMARY);
         refreshBtn.setForeground(Color.WHITE);
         refreshBtn.setFocusPainted(false);
         refreshBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        refreshBtn.setBorder(BorderFactory.createEmptyBorder(7, 16, 7, 16));
         refreshBtn.addActionListener(e -> refresh());
 
         rightBox.add(dateLabel);
         rightBox.add(timeLabel);
         rightBox.add(lastUpdatedLabel);
-        rightBox.add(refreshBtn, "h 34!, w 100!");
+        rightBox.add(refreshBtn, "h 36!");
 
         header.add(rightBox, "align right");
         return header;
     }
 
-    private JPanel buildKpiRow() {
-        JPanel kpiRow = new JPanel(new MigLayout("insets 0, fillx", "[grow, fill]8[grow, fill]8[grow, fill]8[grow, fill]8[grow, fill]8[grow, fill]", "[fill]"));
-        kpiRow.setOpaque(false);
+    private JPanel buildKpiGrid() {
+        JPanel kpiGrid = new JPanel(new MigLayout("insets 0, fillx", "[grow, fill]12[grow, fill]12[grow, fill]12[grow, fill]12[grow, fill]12[grow, fill]", "[]"));
+        kpiGrid.setOpaque(false);
 
-        kpiRow.add(salesCard);
-        kpiRow.add(revenueCard);
-        kpiRow.add(transactionsCard);
-        kpiRow.add(itemsSoldCard);
-        kpiRow.add(aovCard);
-        kpiRow.add(topItemCard);
+        kpiGrid.add(salesCard, "h 112!");
+        kpiGrid.add(revenueCard, "h 112!");
+        kpiGrid.add(transactionsCard, "h 112!");
+        kpiGrid.add(itemsSoldCard, "h 112!");
+        kpiGrid.add(aovCard, "h 112!");
+        kpiGrid.add(topItemCard, "h 112!");
 
-        return kpiRow;
+        return kpiGrid;
     }
 
     private JPanel buildRow2() {
-        JPanel row = new JPanel(new MigLayout("insets 0, fill", "[grow 60, fill]12[grow 40, fill]", "[fill]"));
+        JPanel row = new JPanel(new MigLayout("insets 0, fill", "[grow 58, fill]14[grow 42, fill]", "[fill]"));
         row.setOpaque(false);
 
         row.add(buildChartSection(), "grow");
@@ -181,18 +181,25 @@ public final class DashboardPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 8));
         panel.setBackground(AppTheme.CARD);
         panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppTheme.BORDER),
-                BorderFactory.createEmptyBorder(12, 16, 12, 16)));
+                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                BorderFactory.createEmptyBorder(14, 16, 14, 16)));
 
         JPanel headerBar = new JPanel(new BorderLayout());
         headerBar.setOpaque(false);
 
+        JPanel titleArea = new JPanel(new MigLayout("insets 0, wrap 1, gapy 1"));
+        titleArea.setOpaque(false);
         JLabel title = new JLabel("Sales Performance");
-        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+        title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
         title.setForeground(AppTheme.TEXT_PRIMARY);
-        headerBar.add(title, BorderLayout.WEST);
+        JLabel sub = new JLabel("Revenue trends across selected interval");
+        sub.setFont(AppTheme.captionFont());
+        sub.setForeground(AppTheme.TEXT_MUTED);
+        titleArea.add(title);
+        titleArea.add(sub);
+        headerBar.add(titleArea, BorderLayout.WEST);
 
-        JPanel btnGroupPanel = new JPanel(new MigLayout("insets 0", "[]4[]4[]"));
+        JPanel btnGroupPanel = new JPanel(new MigLayout("insets 0", "[]6[]6[]"));
         btnGroupPanel.setOpaque(false);
 
         stylePeriodButton(btnDaily, DailySalesChart.ChartMode.DAILY);
@@ -230,9 +237,11 @@ public final class DashboardPanel extends JPanel {
         if (active) {
             button.setBackground(AppTheme.PRIMARY);
             button.setForeground(Color.WHITE);
+            button.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
         } else {
-            button.setBackground(new Color(241, 245, 249));
-            button.setForeground(AppTheme.TEXT_PRIMARY);
+            button.setBackground(AppTheme.BORDER_SUBTLE);
+            button.setForeground(AppTheme.TEXT_SECONDARY);
+            button.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
         }
     }
 
@@ -240,36 +249,42 @@ public final class DashboardPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 8));
         panel.setBackground(AppTheme.CARD);
         panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppTheme.BORDER),
-                BorderFactory.createEmptyBorder(12, 14, 12, 14)));
+                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                BorderFactory.createEmptyBorder(14, 16, 14, 16)));
 
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
 
         JLabel title = new JLabel("Recent Transactions");
-        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+        title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
         title.setForeground(AppTheme.TEXT_PRIMARY);
 
-        JLabel subtitle = new JLabel("Newest First");
+        JLabel subtitle = new JLabel("Latest 15 Orders");
         subtitle.setFont(AppTheme.captionFont());
-        subtitle.setForeground(AppTheme.TEXT_SECONDARY);
+        subtitle.setForeground(AppTheme.TEXT_MUTED);
 
         header.add(title, BorderLayout.WEST);
         header.add(subtitle, BorderLayout.EAST);
         panel.add(header, BorderLayout.NORTH);
 
         JTable table = new JTable(recentOrdersModel);
-        table.setRowHeight(32);
+        table.setRowHeight(36);
         table.getTableHeader().setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
         table.setFont(AppTheme.bodyFont());
         table.setFillsViewportHeight(true);
 
         StripedTableCellRenderer.apply(table);
-        setColumnAlignment(table, 0, SwingConstants.CENTER);
-        setColumnAlignment(table, 1, SwingConstants.CENTER);
-        setColumnAlignment(table, 3, SwingConstants.CENTER);
-        setColumnAlignment(table, 4, SwingConstants.RIGHT);
-        table.getColumnModel().getColumn(5).setCellRenderer(new StatusPillRenderer());
+        for (int i = 0; i < 5; i++) {
+            setColumnAlignment(table, i, SwingConstants.CENTER);
+        }
+        table.getColumnModel().getColumn(5).setCellRenderer(new RoundedPillStatusRenderer());
+
+        table.getColumnModel().getColumn(0).setPreferredWidth(75);
+        table.getColumnModel().getColumn(1).setPreferredWidth(55);
+        table.getColumnModel().getColumn(2).setPreferredWidth(95);
+        table.getColumnModel().getColumn(3).setPreferredWidth(75);
+        table.getColumnModel().getColumn(4).setPreferredWidth(85);
+        table.getColumnModel().getColumn(5).setPreferredWidth(85);
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
@@ -279,7 +294,7 @@ public final class DashboardPanel extends JPanel {
     }
 
     private JPanel buildRow3() {
-        JPanel row = new JPanel(new MigLayout("insets 0, fill", "[grow 65, fill]12[grow 35, fill]", "[fill]"));
+        JPanel row = new JPanel(new MigLayout("insets 0, fill", "[grow 58, fill]14[grow 42, fill]", "[fill]"));
         row.setOpaque(false);
 
         row.add(buildTopSellingSection(), "grow");
@@ -292,34 +307,39 @@ public final class DashboardPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 8));
         panel.setBackground(AppTheme.CARD);
         panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppTheme.BORDER),
-                BorderFactory.createEmptyBorder(12, 14, 12, 14)));
+                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                BorderFactory.createEmptyBorder(14, 16, 14, 16)));
 
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
 
         JLabel title = new JLabel("Top Selling Items");
-        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+        title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
         title.setForeground(AppTheme.TEXT_PRIMARY);
 
         JLabel sub = new JLabel("Ranked by Quantity");
         sub.setFont(AppTheme.captionFont());
-        sub.setForeground(AppTheme.TEXT_SECONDARY);
+        sub.setForeground(AppTheme.TEXT_MUTED);
 
         header.add(title, BorderLayout.WEST);
         header.add(sub, BorderLayout.EAST);
         panel.add(header, BorderLayout.NORTH);
 
         JTable table = new JTable(topSellingModel);
-        table.setRowHeight(32);
+        table.setRowHeight(36);
         table.getTableHeader().setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
         table.setFont(AppTheme.bodyFont());
         table.setFillsViewportHeight(true);
 
         StripedTableCellRenderer.apply(table);
-        setColumnAlignment(table, 0, SwingConstants.CENTER);
-        setColumnAlignment(table, 2, SwingConstants.CENTER);
-        setColumnAlignment(table, 3, SwingConstants.RIGHT);
+        for (int i = 0; i < 4; i++) {
+            setColumnAlignment(table, i, SwingConstants.CENTER);
+        }
+
+        table.getColumnModel().getColumn(0).setPreferredWidth(35);
+        table.getColumnModel().getColumn(1).setPreferredWidth(190);
+        table.getColumnModel().getColumn(2).setPreferredWidth(70);
+        table.getColumnModel().getColumn(3).setPreferredWidth(95);
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
@@ -332,42 +352,60 @@ public final class DashboardPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 8));
         panel.setBackground(AppTheme.CARD);
         panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppTheme.BORDER),
-                BorderFactory.createEmptyBorder(12, 14, 12, 14)));
+                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                BorderFactory.createEmptyBorder(14, 16, 14, 16)));
 
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
 
         JLabel title = new JLabel("Today's Summary");
-        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+        title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
         title.setForeground(AppTheme.TEXT_PRIMARY);
         header.add(title, BorderLayout.WEST);
 
         panel.add(header, BorderLayout.NORTH);
 
-        JPanel listPanel = new JPanel(new MigLayout("insets 12 4 12 4, fillx, wrap 2", "[grow][right]", "[]12[]12[]12[]12[]"));
+        JPanel listPanel = new JPanel(new MigLayout("insets 6 2 6 2, fillx, wrap 1", "[grow, fill]", "[]6[]6[]6[]6[]"));
         listPanel.setOpaque(false);
 
-        addSummaryRow(listPanel, "VAT Collected", summaryVatVal);
-        addSummaryRow(listPanel, "Discounts Given", summaryDiscountVal);
-        addSummaryRow(listPanel, "Voided Orders", summaryVoidVal);
-        addSummaryRow(listPanel, "Average Items / Txn", summaryAvgItemsVal);
-        addSummaryRow(listPanel, "Order Channels", summaryChannelVal);
+        listPanel.add(createSummaryItem("VAT Collected", summaryVatVal, Icons.percent(AppTheme.TEXT_SECONDARY, 14)));
+        listPanel.add(createSummaryItem("Discounts Given", summaryDiscountVal, Icons.shoppingBag(AppTheme.TEXT_SECONDARY, 14)));
+        listPanel.add(createSummaryItem("Voided Orders", summaryVoidVal, Icons.xCircle(AppTheme.DANGER, 14)));
+        listPanel.add(createSummaryItem("Average Items / Order", summaryAvgItemsVal, Icons.utensils(AppTheme.TEXT_SECONDARY, 14)));
+        listPanel.add(createSummaryItem("Order Channels", summaryChannelVal, Icons.store(AppTheme.TEXT_SECONDARY, 14)));
 
         panel.add(listPanel, BorderLayout.CENTER);
         return panel;
     }
 
-    private void addSummaryRow(JPanel parent, String labelText, JLabel valueLabel) {
+    private JPanel createSummaryItem(String labelText, JLabel valueLabel, javax.swing.Icon icon) {
+        JPanel row = new JPanel(new MigLayout("insets 6 10 6 10, fillx", "[]8[grow][right]")) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.decode("#F8FAFC"));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        row.setOpaque(false);
+
+        if (icon != null) {
+            row.add(new JLabel(icon));
+        }
+
         JLabel label = new JLabel(labelText);
         label.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         label.setForeground(AppTheme.TEXT_SECONDARY);
+        row.add(label, "growx");
 
         valueLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
         valueLabel.setForeground(AppTheme.TEXT_PRIMARY);
+        row.add(valueLabel);
 
-        parent.add(label);
-        parent.add(valueLabel, "growx");
+        return row;
     }
 
     private void updateClock() {
@@ -433,12 +471,11 @@ public final class DashboardPanel extends JPanel {
             double aovPct = calcPctChange(aovToday.toMinorUnits(), aovBaseline.toMinorUnits());
             aovCard.setChangeText(formatPctBadge(aovPct) + " " + baselineLabel, aovPct >= 0);
         } else {
-
-            salesCard.setChangeText("", AppTheme.TEXT_SECONDARY);
-            revenueCard.setChangeText("", AppTheme.TEXT_SECONDARY);
-            transactionsCard.setChangeText("", AppTheme.TEXT_SECONDARY);
-            itemsSoldCard.setChangeText("", AppTheme.TEXT_SECONDARY);
-            aovCard.setChangeText("", AppTheme.TEXT_SECONDARY);
+            salesCard.setChangeText("Standard Day Target", AppTheme.TEXT_MUTED);
+            revenueCard.setChangeText("After VAT and Discounts", AppTheme.TEXT_MUTED);
+            transactionsCard.setChangeText("Completed Orders", AppTheme.TEXT_MUTED);
+            itemsSoldCard.setChangeText("Total Units Sold", AppTheme.TEXT_MUTED);
+            aovCard.setChangeText("Average per Order", AppTheme.TEXT_MUTED);
         }
 
         List<TopSellingItem> topItems = todayReport.topSellingItems();
@@ -449,10 +486,10 @@ public final class DashboardPanel extends JPanel {
         if (!topItems.isEmpty()) {
             TopSellingItem top1 = topItems.get(0);
             topItemCard.setValue(top1.itemName());
-            topItemCard.setChangeText(top1.quantitySold() + " units sold (" + MoneyFormatter.format(top1.revenue()) + ")", AppTheme.TEXT_SECONDARY);
+            topItemCard.setChangeText(top1.quantitySold() + " units (" + MoneyFormatter.format(top1.revenue()) + ")", AppTheme.TEXT_SECONDARY);
         } else {
             topItemCard.setValue("N/A");
-            topItemCard.setChangeText("No sales recorded", AppTheme.TEXT_SECONDARY);
+            topItemCard.setChangeText("No sales recorded", AppTheme.TEXT_MUTED);
         }
 
         topSellingModel.setItems(topItems);
@@ -602,28 +639,62 @@ public final class DashboardPanel extends JPanel {
         }
     }
 
-    private static final class StatusPillRenderer extends DefaultTableCellRenderer {
+    private static final class RoundedPillStatusRenderer extends DefaultTableCellRenderer {
+        private String currentStatus = "";
+        private boolean isRowSelected = false;
+
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                                                        boolean isSelected, boolean hasFocus,
                                                        int row, int column) {
-            JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            label.setHorizontalAlignment(SwingConstants.CENTER);
-            label.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
-            label.setOpaque(true);
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            this.currentStatus = value != null ? value.toString() : "";
+            this.isRowSelected = isSelected;
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
+            setOpaque(false);
 
-            String text = value != null ? value.toString() : "";
-            if ("PAID".equalsIgnoreCase(text)) {
-                label.setBackground(isSelected ? new Color(187, 247, 208) : new Color(220, 252, 231));
-                label.setForeground(new Color(22, 101, 52));
-            } else if ("VOIDED".equalsIgnoreCase(text)) {
-                label.setBackground(isSelected ? new Color(254, 202, 202) : new Color(254, 226, 226));
-                label.setForeground(new Color(153, 27, 27));
+            if ("PAID".equalsIgnoreCase(currentStatus)) {
+                setForeground(AppTheme.SUCCESS);
+            } else if ("VOIDED".equalsIgnoreCase(currentStatus)) {
+                setForeground(AppTheme.DANGER);
             } else {
-                label.setBackground(isSelected ? new Color(253, 230, 138) : new Color(254, 243, 199));
-                label.setForeground(new Color(146, 64, 14));
+                setForeground(AppTheme.WARNING);
             }
-            return label;
+            return this;
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+            int pillW = 60;
+            int pillH = 22;
+            int x = (w - pillW) / 2;
+            int y = (h - pillH) / 2;
+
+            if ("PAID".equalsIgnoreCase(currentStatus)) {
+                g2.setColor(isRowSelected ? Color.decode("#BBF7D0") : AppTheme.SUCCESS_BG);
+                g2.fillRoundRect(x, y, pillW, pillH, 12, 12);
+                g2.setColor(AppTheme.SUCCESS_BORDER);
+                g2.drawRoundRect(x, y, pillW, pillH, 12, 12);
+            } else if ("VOIDED".equalsIgnoreCase(currentStatus)) {
+                g2.setColor(isRowSelected ? Color.decode("#FECACA") : AppTheme.DANGER_BG);
+                g2.fillRoundRect(x, y, pillW, pillH, 12, 12);
+                g2.setColor(AppTheme.DANGER_BORDER);
+                g2.drawRoundRect(x, y, pillW, pillH, 12, 12);
+            } else {
+                g2.setColor(isRowSelected ? Color.decode("#FDE68A") : AppTheme.WARNING_BG);
+                g2.fillRoundRect(x, y, pillW, pillH, 12, 12);
+                g2.setColor(AppTheme.WARNING_BORDER);
+                g2.drawRoundRect(x, y, pillW, pillH, 12, 12);
+            }
+
+            g2.dispose();
+            super.paintComponent(g);
         }
     }
 }

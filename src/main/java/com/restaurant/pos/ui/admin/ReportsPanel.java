@@ -10,6 +10,7 @@ import com.restaurant.pos.ui.components.KpiCard;
 import com.restaurant.pos.ui.components.StripedTableCellRenderer;
 import com.restaurant.pos.ui.format.MoneyFormatter;
 import com.restaurant.pos.ui.theme.AppTheme;
+import com.restaurant.pos.ui.theme.Icons;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -19,7 +20,6 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
-import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -33,8 +33,10 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.SwingConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -53,7 +55,7 @@ import java.util.List;
 
 public final class ReportsPanel extends JPanel {
 
-    private static final int ROW_HEIGHT = 34;
+    private static final int ROW_HEIGHT = 38;
     private static final DateTimeFormatter DATETIME_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
@@ -62,10 +64,10 @@ public final class ReportsPanel extends JPanel {
     private final DatePickerButton fromPicker = new DatePickerButton(LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()));
     private final DatePickerButton toPicker   = new DatePickerButton(LocalDate.now());
 
-    private final KpiCard grossCard = new KpiCard("Gross Revenue");
-    private final KpiCard netCard   = new KpiCard("Net Revenue");
-    private final KpiCard vatCard   = new KpiCard("VAT Collected");
-    private final KpiCard ordersCard = new KpiCard("Total Orders");
+    private final KpiCard grossCard  = new KpiCard("Gross Revenue",  null, Icons.reports(AppTheme.ACCENT, 16));
+    private final KpiCard netCard    = new KpiCard("Net Revenue",    null, Icons.trendingUp(AppTheme.SUCCESS, 16));
+    private final KpiCard vatCard    = new KpiCard("VAT Collected",  null, Icons.percent(AppTheme.TEXT_SECONDARY, 16));
+    private final KpiCard ordersCard = new KpiCard("Total Orders",   null, Icons.orders(AppTheme.TEXT_SECONDARY, 16));
 
     private final TopSellingItemsTableModel topItemsModel = new TopSellingItemsTableModel();
     private final CashierSalesTableModel cashierSalesModel = new CashierSalesTableModel();
@@ -76,38 +78,74 @@ public final class ReportsPanel extends JPanel {
     private List<Order> currentVoidReport = new ArrayList<>();
 
     public ReportsPanel(AppContext context) {
-        super(new BorderLayout(0, 12));
+        super(new BorderLayout(0, 16));
         this.context = context;
 
         setBackground(AppTheme.BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        add(buildHeaderBar(), BorderLayout.NORTH);
-        add(buildTabsPane(), BorderLayout.CENTER);
+        add(buildHeaderSection(), BorderLayout.NORTH);
+        add(buildMainSection(), BorderLayout.CENTER);
 
         runReport();
     }
 
-    private JPanel buildHeaderBar() {
-        JPanel container = new JPanel(new MigLayout("insets 0, fillx", "[grow][]"));
-        container.setOpaque(false);
+    private JPanel buildHeaderSection() {
+        JPanel header = new JPanel(new MigLayout("insets 0, fillx, wrap 1", "[grow, fill]", "[]12[]"));
+        header.setOpaque(false);
+
+        JPanel titleRow = new JPanel(new MigLayout("insets 0, fillx", "[grow][]"));
+        titleRow.setOpaque(false);
+
+        JPanel titleBox = new JPanel(new MigLayout("insets 0, wrap 1, gapy 2"));
+        titleBox.setOpaque(false);
 
         JLabel title = new JLabel("Reports & Analytics");
         title.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_PAGE_TITLE));
         title.setForeground(AppTheme.TEXT_PRIMARY);
-        container.add(title);
 
-        JPanel controls = new JPanel(new MigLayout("insets 0", "[][][][][][][][][][]"));
-        controls.setOpaque(false);
+        JLabel subtitle = new JLabel("Analyze revenue performance, top selling items, and cashier sales breakdowns");
+        subtitle.setFont(AppTheme.captionFont());
+        subtitle.setForeground(AppTheme.TEXT_SECONDARY);
+
+        titleBox.add(title);
+        titleBox.add(subtitle);
+        titleRow.add(titleBox, "growx");
+
+        JPanel exportGroup = new JPanel(new MigLayout("insets 0", "[]8[]8[]"));
+        exportGroup.setOpaque(false);
+
+        JButton exportCsvBtn = createExportButton("Export CSV", Icons.fileText(AppTheme.TEXT_PRIMARY, 14));
+        exportCsvBtn.addActionListener(e -> exportCsv());
+
+        JButton exportExcelBtn = createExportButton("Export Excel", Icons.download(AppTheme.TEXT_PRIMARY, 14));
+        exportExcelBtn.addActionListener(e -> exportExcel());
+
+        JButton exportPdfBtn = createExportButton("Export PDF", Icons.download(AppTheme.TEXT_PRIMARY, 14));
+        exportPdfBtn.addActionListener(e -> exportPdf());
+
+        exportGroup.add(exportCsvBtn, "h 38!");
+        exportGroup.add(exportExcelBtn, "h 38!");
+        exportGroup.add(exportPdfBtn, "h 38!");
+        titleRow.add(exportGroup, "align right");
+
+        header.add(titleRow, "growx");
+
+        JPanel filterBar = new JPanel(new MigLayout("insets 12 16 12 16, fillx", "[]8[]16[]8[]16[]6[]6[]16[]push"));
+        filterBar.setBackground(AppTheme.CARD);
+        filterBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                BorderFactory.createEmptyBorder(0, 0, 0, 0)));
 
         JLabel fromLabel = new JLabel("From:");
         fromLabel.setFont(AppTheme.bodyFont());
+        fromLabel.setForeground(AppTheme.TEXT_SECONDARY);
 
         JLabel toLabel = new JLabel("To:");
         toLabel.setFont(AppTheme.bodyFont());
+        toLabel.setForeground(AppTheme.TEXT_SECONDARY);
 
-        JButton todayBtn = new JButton("Today");
-        todayBtn.setFont(AppTheme.captionFont());
+        JButton todayBtn = createPresetButton("Today");
         todayBtn.addActionListener(e -> {
             LocalDate today = LocalDate.now();
             fromPicker.setSelectedDate(today);
@@ -115,8 +153,7 @@ public final class ReportsPanel extends JPanel {
             runReport();
         });
 
-        JButton weekBtn = new JButton("This Week");
-        weekBtn.setFont(AppTheme.captionFont());
+        JButton weekBtn = createPresetButton("This Week");
         weekBtn.addActionListener(e -> {
             LocalDate today = LocalDate.now();
             fromPicker.setSelectedDate(today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
@@ -124,8 +161,7 @@ public final class ReportsPanel extends JPanel {
             runReport();
         });
 
-        JButton monthBtn = new JButton("This Month");
-        monthBtn.setFont(AppTheme.captionFont());
+        JButton monthBtn = createPresetButton("This Month");
         monthBtn.addActionListener(e -> {
             LocalDate today = LocalDate.now();
             fromPicker.setSelectedDate(today.with(TemporalAdjusters.firstDayOfMonth()));
@@ -135,70 +171,96 @@ public final class ReportsPanel extends JPanel {
 
         JButton runBtn = new JButton("Run Report");
         runBtn.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+        runBtn.setIcon(Icons.refresh(Color.WHITE, 14));
+        runBtn.setIconTextGap(8);
         runBtn.setBackground(AppTheme.PRIMARY);
         runBtn.setForeground(Color.WHITE);
+        runBtn.setFocusPainted(false);
         runBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        runBtn.setBorder(BorderFactory.createEmptyBorder(8, 18, 8, 18));
         runBtn.addActionListener(e -> runReport());
 
-        JButton exportCsvBtn = new JButton("Export CSV");
-        exportCsvBtn.setFont(AppTheme.bodyFont());
-        exportCsvBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        exportCsvBtn.addActionListener(e -> exportCsv());
+        filterBar.add(fromLabel);
+        filterBar.add(fromPicker, "w 160!, h 36!");
+        filterBar.add(toLabel);
+        filterBar.add(toPicker, "w 160!, h 36!");
+        filterBar.add(todayBtn, "h 36!");
+        filterBar.add(weekBtn, "h 36!");
+        filterBar.add(monthBtn, "h 36!");
+        filterBar.add(runBtn, "h 36!");
 
-        JButton exportExcelBtn = new JButton("Export Excel");
-        exportExcelBtn.setFont(AppTheme.bodyFont());
-        exportExcelBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        exportExcelBtn.addActionListener(e -> exportExcel());
+        header.add(filterBar, "growx");
 
-        JButton exportPdfBtn = new JButton("Export PDF");
-        exportPdfBtn.setFont(AppTheme.bodyFont());
-        exportPdfBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        exportPdfBtn.addActionListener(e -> exportPdf());
+        return header;
+    }
 
-        controls.add(fromLabel);
-        controls.add(fromPicker, "w 175!, h 36!");
-        controls.add(toLabel, "gapleft 8");
-        controls.add(toPicker, "w 175!, h 36!");
-        controls.add(todayBtn, "h 36!");
-        controls.add(weekBtn, "h 36!");
-        controls.add(monthBtn, "h 36!");
-        controls.add(runBtn, "h 36!, gapleft 10");
-        controls.add(exportCsvBtn, "h 36!, gapleft 15");
-        controls.add(exportExcelBtn, "h 36!");
-        controls.add(exportPdfBtn, "h 36!");
+    private JPanel buildMainSection() {
+        JPanel panel = new JPanel(new BorderLayout(0, 16));
+        panel.setOpaque(false);
 
-        container.add(controls);
-        return container;
+        JPanel kpiGrid = new JPanel(new MigLayout("insets 0, fillx", "[grow,fill]12[grow,fill]12[grow,fill]12[grow,fill]", "[]"));
+        kpiGrid.setOpaque(false);
+        kpiGrid.add(grossCard, "h 110!");
+        kpiGrid.add(netCard, "h 110!");
+        kpiGrid.add(vatCard, "h 110!");
+        kpiGrid.add(ordersCard, "h 110!");
+        panel.add(kpiGrid, BorderLayout.NORTH);
+
+        panel.add(buildTabsPane(), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JButton createPresetButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(AppTheme.bodyFont());
+        btn.setBackground(AppTheme.CARD);
+        btn.setForeground(AppTheme.TEXT_PRIMARY);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER),
+                BorderFactory.createEmptyBorder(6, 14, 6, 14)));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
+    private JButton createExportButton(String text, javax.swing.Icon icon) {
+        JButton btn = new JButton(text);
+        if (icon != null) {
+            btn.setIcon(icon);
+            btn.setIconTextGap(8);
+        }
+        btn.setFont(AppTheme.bodyFont());
+        btn.setBackground(AppTheme.CARD);
+        btn.setForeground(AppTheme.TEXT_PRIMARY);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER),
+                BorderFactory.createEmptyBorder(7, 16, 7, 16)));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return btn;
     }
 
     private JTabbedPane buildTabsPane() {
         JTabbedPane tabs = new JTabbedPane();
         tabs.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
 
-        tabs.addTab("Sales Summary", buildSalesSummaryTab());
-        tabs.addTab("Sales by Cashier", buildSalesByCashierTab());
-        tabs.addTab("Voids & Cancellations", buildVoidReportTab());
+        tabs.addTab("Sales Summary", Icons.reports(AppTheme.TEXT_SECONDARY, 15), buildSalesSummaryTab());
+        tabs.addTab("Sales by Cashier", Icons.users(AppTheme.TEXT_SECONDARY, 15), buildSalesByCashierTab());
+        tabs.addTab("Voids & Cancellations", Icons.xCircle(AppTheme.TEXT_SECONDARY, 15), buildVoidReportTab());
 
         return tabs;
     }
 
     private JPanel buildSalesSummaryTab() {
-        JPanel panel = new JPanel(new BorderLayout(0, 16));
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
+        JPanel tableSection = new JPanel(new BorderLayout(0, 10));
+        tableSection.setBackground(AppTheme.CARD);
+        tableSection.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER),
+                BorderFactory.createEmptyBorder(16, 18, 16, 18)));
 
-        JPanel kpiGrid = new JPanel(new MigLayout("insets 0, fillx", "[grow,fill][grow,fill][grow,fill][grow,fill]", "[]"));
-        kpiGrid.setOpaque(false);
-        kpiGrid.add(grossCard, "h 96!");
-        kpiGrid.add(netCard, "h 96!");
-        kpiGrid.add(vatCard, "h 96!");
-        kpiGrid.add(ordersCard, "h 96!");
-        panel.add(kpiGrid, BorderLayout.NORTH);
-
-        JPanel tableSection = new JPanel(new BorderLayout(0, 8));
-        tableSection.setOpaque(false);
         JLabel tableTitle = new JLabel("Top Selling Items");
         tableTitle.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
+        tableTitle.setForeground(AppTheme.TEXT_PRIMARY);
         tableSection.add(tableTitle, BorderLayout.NORTH);
 
         JTable topTable = new JTable(topItemsModel);
@@ -206,16 +268,30 @@ public final class ReportsPanel extends JPanel {
         topTable.getTableHeader().setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
         topTable.setFont(AppTheme.bodyFont());
         StripedTableCellRenderer.apply(topTable);
-        tableSection.add(new JScrollPane(topTable), BorderLayout.CENTER);
 
-        panel.add(tableSection, BorderLayout.CENTER);
-        return panel;
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < 3; i++) {
+            topTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
+        topTable.getColumnModel().getColumn(0).setPreferredWidth(300);
+        topTable.getColumnModel().getColumn(1).setPreferredWidth(120);
+        topTable.getColumnModel().getColumn(2).setPreferredWidth(160);
+
+        JScrollPane scrollPane = new JScrollPane(topTable);
+        scrollPane.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        tableSection.add(scrollPane, BorderLayout.CENTER);
+
+        return tableSection;
     }
 
     private JPanel buildSalesByCashierTab() {
-        JPanel panel = new JPanel(new BorderLayout(0, 8));
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
+        JPanel panel = new JPanel(new BorderLayout(0, 10));
+        panel.setBackground(AppTheme.CARD);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER),
+                BorderFactory.createEmptyBorder(16, 18, 16, 18)));
 
         JTable cashierTable = new JTable(cashierSalesModel);
         cashierTable.setRowHeight(ROW_HEIGHT);
@@ -223,14 +299,28 @@ public final class ReportsPanel extends JPanel {
         cashierTable.setFont(AppTheme.bodyFont());
         StripedTableCellRenderer.apply(cashierTable);
 
-        panel.add(new JScrollPane(cashierTable), BorderLayout.CENTER);
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < 3; i++) {
+            cashierTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
+        cashierTable.getColumnModel().getColumn(0).setPreferredWidth(260);
+        cashierTable.getColumnModel().getColumn(1).setPreferredWidth(120);
+        cashierTable.getColumnModel().getColumn(2).setPreferredWidth(160);
+
+        JScrollPane scrollPane = new JScrollPane(cashierTable);
+        scrollPane.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel buildVoidReportTab() {
-        JPanel panel = new JPanel(new BorderLayout(0, 8));
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
+        JPanel panel = new JPanel(new BorderLayout(0, 10));
+        panel.setBackground(AppTheme.CARD);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER),
+                BorderFactory.createEmptyBorder(16, 18, 16, 18)));
 
         JTable voidTable = new JTable(voidReportModel);
         voidTable.setRowHeight(ROW_HEIGHT);
@@ -238,7 +328,21 @@ public final class ReportsPanel extends JPanel {
         voidTable.setFont(AppTheme.bodyFont());
         StripedTableCellRenderer.apply(voidTable);
 
-        panel.add(new JScrollPane(voidTable), BorderLayout.CENTER);
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < 5; i++) {
+            voidTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
+        voidTable.getColumnModel().getColumn(0).setPreferredWidth(90);
+        voidTable.getColumnModel().getColumn(1).setPreferredWidth(160);
+        voidTable.getColumnModel().getColumn(2).setPreferredWidth(140);
+        voidTable.getColumnModel().getColumn(3).setPreferredWidth(120);
+        voidTable.getColumnModel().getColumn(4).setPreferredWidth(220);
+
+        JScrollPane scrollPane = new JScrollPane(voidTable);
+        scrollPane.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
     }
 

@@ -26,7 +26,6 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Frame;
-import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -114,7 +113,6 @@ final class MenuItemDialog extends JDialog {
                         return;
                     }
                 } catch (IOException ignored) {
-
                 }
             }
         }
@@ -123,16 +121,17 @@ final class MenuItemDialog extends JDialog {
     }
 
     private JPanel buildContent() {
-        JPanel panel = new JPanel(new MigLayout("fillx, insets 20, wrap 2", "[right][grow,fill]"));
-        panel.setBackground(AppTheme.BACKGROUND);
+        JPanel panel = new JPanel(new MigLayout("fillx, insets 24, wrap 2", "[right, 140!][grow,fill]"));
+        panel.setBackground(AppTheme.CARD);
 
         JLabel titleLabel = new JLabel(itemToEdit == null ? "New Menu Item" : "Edit Menu Item");
         titleLabel.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_SECTION_HEADER));
         titleLabel.setForeground(AppTheme.TEXT_PRIMARY);
-        panel.add(titleLabel, "span 2, gapbottom 15");
+        panel.add(titleLabel, "span 2, gapbottom 12");
 
         JLabel nameLabel = new JLabel("Item Name:");
         nameLabel.setFont(AppTheme.bodyFont());
+        nameLabel.setForeground(AppTheme.TEXT_SECONDARY);
         panel.add(nameLabel);
 
         nameField.setFont(AppTheme.bodyFont());
@@ -140,27 +139,31 @@ final class MenuItemDialog extends JDialog {
 
         JLabel categoryLabel = new JLabel("Category:");
         categoryLabel.setFont(AppTheme.bodyFont());
+        categoryLabel.setForeground(AppTheme.TEXT_SECONDARY);
         panel.add(categoryLabel);
 
         categoryComboBox.setFont(AppTheme.bodyFont());
         panel.add(categoryComboBox, "h 36!");
 
-        JLabel priceLabel = new JLabel("Price (\u20B1):");
+        JLabel priceLabel = new JLabel("Price (₱):");
         priceLabel.setFont(AppTheme.bodyFont());
+        priceLabel.setForeground(AppTheme.TEXT_SECONDARY);
         panel.add(priceLabel);
 
         priceField.setFont(AppTheme.bodyFont());
         panel.add(priceField, "h 36!");
 
-        JLabel costLabel = new JLabel("Cost (\u20B1, optional):");
+        JLabel costLabel = new JLabel("Cost (₱, optional):");
         costLabel.setFont(AppTheme.bodyFont());
+        costLabel.setForeground(AppTheme.TEXT_SECONDARY);
         panel.add(costLabel);
 
         costField.setFont(AppTheme.bodyFont());
         panel.add(costField, "h 36!");
 
-        JLabel imageLabel = new JLabel("Item Image:");
+        JLabel imageLabel = new JLabel("Item Photo:");
         imageLabel.setFont(AppTheme.bodyFont());
+        imageLabel.setForeground(AppTheme.TEXT_SECONDARY);
         panel.add(imageLabel);
 
         JPanel imagePickerBox = new JPanel(new MigLayout("insets 0", "[][][]"));
@@ -170,15 +173,22 @@ final class MenuItemDialog extends JDialog {
         previewLabel.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
         imagePickerBox.add(previewLabel, "w 48!, h 48!");
 
-        JButton browseBtn = new JButton("Upload Photo");
+        JButton browseBtn = new JButton("Choose Photo");
         browseBtn.setFont(AppTheme.bodyFont());
-        browseBtn.setIcon(Icons.camera(AppTheme.TEXT_PRIMARY, 16));
+        browseBtn.setIcon(Icons.camera(AppTheme.TEXT_PRIMARY, 14));
+        browseBtn.setIconTextGap(6);
+        browseBtn.setBackground(AppTheme.CARD);
+        browseBtn.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        browseBtn.setFocusPainted(false);
         browseBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         browseBtn.addActionListener(e -> onChooseImage());
         imagePickerBox.add(browseBtn, "h 36!, gapleft 8");
 
         JButton clearImageBtn = new JButton("Remove");
         clearImageBtn.setFont(AppTheme.captionFont());
+        clearImageBtn.setBackground(AppTheme.CARD);
+        clearImageBtn.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        clearImageBtn.setFocusPainted(false);
         clearImageBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         clearImageBtn.addActionListener(e -> setImagePath(null));
         imagePickerBox.add(clearImageBtn, "h 36!, gapleft 4");
@@ -187,28 +197,34 @@ final class MenuItemDialog extends JDialog {
 
         availableCheckBox.setFont(AppTheme.bodyFont());
         availableCheckBox.setOpaque(false);
-        panel.add(availableCheckBox, "span 2, gaptop 5");
+        panel.add(availableCheckBox, "span 2, gaptop 4");
 
         errorLabel.setFont(AppTheme.captionFont());
         errorLabel.setForeground(AppTheme.DANGER);
-        panel.add(errorLabel, "span 2, gaptop 5, gapbottom 10");
+        panel.add(errorLabel, "span 2, gaptop 4, gapbottom 10");
 
-        JButton saveButton = new JButton("Save Item");
+        JButton saveButton = new JButton("Save Menu Item");
         saveButton.setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_BODY));
+        saveButton.setIcon(Icons.check(Color.WHITE, 16));
+        saveButton.setIconTextGap(6);
         saveButton.setBackground(AppTheme.PRIMARY);
         saveButton.setForeground(Color.WHITE);
+        saveButton.setFocusPainted(false);
         saveButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         saveButton.addActionListener(e -> onSave());
 
         JButton cancelButton = new JButton("Cancel");
         cancelButton.setFont(AppTheme.bodyFont());
+        cancelButton.setBackground(AppTheme.CARD);
+        cancelButton.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER));
+        cancelButton.setFocusPainted(false);
         cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cancelButton.addActionListener(e -> dispose());
 
-        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow,fill][grow,fill]"));
+        JPanel buttonPanel = new JPanel(new MigLayout("insets 0", "[grow,fill]10[grow,fill]"));
         buttonPanel.setOpaque(false);
-        buttonPanel.add(saveButton, "h 40!");
         buttonPanel.add(cancelButton, "h 40!");
+        buttonPanel.add(saveButton, "h 40!");
 
         panel.add(buttonPanel, "span 2, gaptop 10");
         return panel;
@@ -248,7 +264,7 @@ final class MenuItemDialog extends JDialog {
             }
 
             com.restaurant.pos.validation.Validator.requireNonEmpty(priceStr, "Price");
-            
+
             BigDecimal bdPrice = new BigDecimal(priceStr);
             com.restaurant.pos.validation.Validator.requireNonNegative(bdPrice, "Price");
             Money price = Money.of(bdPrice);

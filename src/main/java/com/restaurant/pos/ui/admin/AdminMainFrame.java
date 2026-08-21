@@ -52,6 +52,7 @@ public final class AdminMainFrame extends JFrame {
 
         setContentPane(buildContent());
         setSize(1663, 836);
+        setMinimumSize(new java.awt.Dimension(1280, 768));
         setLocationRelativeTo(null);
     }
 
