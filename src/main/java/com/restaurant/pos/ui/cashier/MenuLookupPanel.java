@@ -3,12 +3,13 @@ package com.restaurant.pos.ui.cashier;
 import com.restaurant.pos.AppContext;
 import com.restaurant.pos.model.Category;
 import com.restaurant.pos.model.MenuItem;
+import com.restaurant.pos.ui.components.StripedTableCellRenderer;
 import com.restaurant.pos.ui.format.MoneyFormatter;
 import com.restaurant.pos.ui.theme.AppTheme;
+import com.restaurant.pos.ui.theme.Icons;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BorderFactory;
-import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -16,11 +17,12 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.BorderLayout;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -66,6 +68,7 @@ public final class MenuLookupPanel extends JPanel {
 
         JLabel searchLabel = new JLabel("Search:");
         searchLabel.setFont(AppTheme.bodyFont());
+        searchLabel.setForeground(AppTheme.TEXT_SECONDARY);
 
         searchField.setFont(AppTheme.bodyFont());
         searchField.getDocument().addDocumentListener(new DocumentListener() {
@@ -79,25 +82,39 @@ public final class MenuLookupPanel extends JPanel {
 
         JLabel catLabel = new JLabel("Category:");
         catLabel.setFont(AppTheme.bodyFont());
+        catLabel.setForeground(AppTheme.TEXT_SECONDARY);
 
         categoryFilter.setFont(AppTheme.bodyFont());
         categoryFilter.addActionListener(e -> filter());
 
         controls.add(searchLabel);
-        controls.add(searchField, "h 38!");
-        controls.add(catLabel, "gapleft 15");
-        controls.add(categoryFilter, "h 38!");
+        controls.add(searchField, "h 36!, w 200!");
+        controls.add(catLabel, "gapleft 14");
+        controls.add(categoryFilter, "h 36!, w 180!");
 
         header.add(controls);
         return header;
     }
 
-    private JScrollPane buildTablePane() {
+    private JPanel buildTablePane() {
+        JPanel container = new JPanel(new BorderLayout(0, 8));
+        container.setBackground(AppTheme.CARD);
+        container.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER),
+                BorderFactory.createEmptyBorder(12, 12, 12, 12)));
+
         table.setRowHeight(ROW_HEIGHT);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getTableHeader().setFont(AppTheme.titleFont(AppTheme.FONT_SIZE_TABLE_HEADER));
         table.setFont(AppTheme.bodyFont());
-        return new JScrollPane(table);
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < 3; i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
+        container.add(new JScrollPane(table), BorderLayout.CENTER);
+        return container;
     }
 
     private void loadData() {
